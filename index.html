@@ -1,2506 +1,1367 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <title>LoraTrak - نظام تتبع الحافلات الذكي</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        cairo: ['Cairo', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Cairo', sans-serif;
-            background: #09090b;
-            color: #ffffff;
-            overflow-x: hidden;
-        }
-
-        /* ========== SCROLLBAR ========== */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #09090b;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #f59e0b;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #fbbf24;
-        }
-
-        /* ========== GLOBAL BACKGROUND ========== */
-        .global-bg {
-            position: fixed;
-            inset: 0;
-            z-index: -50;
-            background: #09090b;
-        }
-
-        .global-bg::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background:
-                radial-gradient(circle at 20% 20%, rgba(245,158,11,0.04) 0%, transparent 40%),
-                radial-gradient(circle at 80% 80%, rgba(245,158,11,0.03) 0%, transparent 40%),
-                radial-gradient(circle at 50% 50%, rgba(249,115,22,0.02) 0%, transparent 60%);
-        }
-
-        /* ========== GRID OVERLAY ========== */
-        .grid-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: -40;
-            background-image:
-                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
-            background-size: 60px 60px;
-            mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
-        }
-
-        /* ========== ANIMATIONS ========== */
-        @keyframes fadeInUp {
-            0% { opacity: 0; transform: translateY(40px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes fadeInDown {
-            0% { opacity: 0; transform: translateY(-30px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes fadeInRight {
-            0% { opacity: 0; transform: translateX(40px); }
-            100% { opacity: 1; transform: translateX(0); }
-        }
-
-        @keyframes fadeInLeft {
-            0% { opacity: 0; transform: translateX(-40px); }
-            100% { opacity: 1; transform: translateX(0); }
-        }
-
-        @keyframes scaleIn {
-            0% { opacity: 0; transform: scale(0.8); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-
-        @keyframes floatSlow {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-15px) rotate(3deg); }
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 20px rgba(245,158,11,0.3); }
-            50% { box-shadow: 0 0 40px rgba(245,158,11,0.6), 0 0 60px rgba(245,158,11,0.2); }
-        }
-
-        @keyframes pulse-ring {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(1.8); opacity: 0; }
-        }
-
-        @keyframes slideData {
-            0% { transform: translateX(100%); opacity: 0; }
-            100% { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes busMove {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(calc(100vw + 100%)); }
-        }
-
-        @keyframes signalWave {
-            0% { transform: scale(1); opacity: 0.8; }
-            100% { transform: scale(3); opacity: 0; }
-        }
-
-        @keyframes rotate360 {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes dash {
-            to { stroke-dashoffset: 0; }
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        @keyframes typewriter {
-            from { width: 0; }
-            to { width: 100%; }
-        }
-
-        @keyframes blinkCursor {
-            0%, 100% { border-color: #f59e0b; }
-            50% { border-color: transparent; }
-        }
-
-        @keyframes particleFloat {
-            0% { transform: translateY(0) translateX(0); opacity: 0; }
-            20% { opacity: 1; }
-            80% { opacity: 1; }
-            100% { transform: translateY(-100vh) translateX(50px); opacity: 0; }
-        }
-
-        .animate-on-scroll {
-            opacity: 0;
-            transform: translateY(40px);
-            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .animate-on-scroll.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .animate-on-scroll.visible.delay-1 { transition-delay: 0.1s; }
-        .animate-on-scroll.visible.delay-2 { transition-delay: 0.2s; }
-        .animate-on-scroll.visible.delay-3 { transition-delay: 0.3s; }
-        .animate-on-scroll.visible.delay-4 { transition-delay: 0.4s; }
-        .animate-on-scroll.visible.delay-5 { transition-delay: 0.5s; }
-        .animate-on-scroll.visible.delay-6 { transition-delay: 0.6s; }
-
-        /* ========== HERO ========== */
-        .hero-bg {
-            position: absolute;
-            inset: 0;
-            overflow: hidden;
-        }
-
-        .hero-bg .glow-1 {
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(245,158,11,0.15) 0%, transparent 70%);
-            top: -200px;
-            right: -100px;
-            animation: float 8s ease-in-out infinite;
-        }
-
-        .hero-bg .glow-2 {
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(249,115,22,0.1) 0%, transparent 70%);
-            bottom: -150px;
-            left: -100px;
-            animation: float 10s ease-in-out infinite reverse;
-        }
-
-        .hero-bg .glow-3 {
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 70%);
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            animation: float 6s ease-in-out infinite;
-        }
-
-        .hero-particles {
-            position: absolute;
-            inset: 0;
-            overflow: hidden;
-        }
-
-        .particle {
-            position: absolute;
-            width: 3px;
-            height: 3px;
-            background: #f59e0b;
-            border-radius: 50%;
-            opacity: 0;
-            animation: particleFloat linear infinite;
-        }
-
-        .hero-title {
-            font-size: clamp(2.5rem, 8vw, 6rem);
-            font-weight: 800;
-            line-height: 1;
-            background: linear-gradient(135deg, #ffffff 0%, #fbbf24 50%, #f59e0b 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 16px;
-            background: rgba(245,158,11,0.1);
-            border: 1px solid rgba(245,158,11,0.3);
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #fbbf24;
-            animation: fadeInDown 0.8s ease-out;
-        }
-
-        .hero-badge .dot {
-            width: 8px;
-            height: 8px;
-            background: #22c55e;
-            border-radius: 50%;
-            animation: blink 2s infinite;
-        }
-
-        /* ========== GLASS CARD ========== */
-        .glass-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.07);
-            backdrop-filter: blur(12px);
-            border-radius: 16px;
-            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-        .glass-card:hover {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(245,158,11,0.2);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 30px rgba(245,158,11,0.05);
-        }
-
-        /* ========== ICON CONTAINER ========== */
-        .icon-container {
-            width: 56px;
-            height: 56px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(245,158,11,0.1);
-            border: 1px solid rgba(245,158,11,0.2);
-            transition: all 0.3s ease;
-        }
-
-        .glass-card:hover .icon-container {
-            background: rgba(245,158,11,0.2);
-            box-shadow: 0 0 20px rgba(245,158,11,0.2);
-        }
-
-        /* ========== SECTION TITLE ========== */
-        .section-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 16px;
-            background: rgba(245,158,11,0.08);
-            border: 1px solid rgba(245,158,11,0.2);
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 700;
-            color: #fbbf24;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .section-title {
-            font-size: clamp(1.8rem, 4vw, 3rem);
-            font-weight: 700;
-            line-height: 1.2;
-            color: #ffffff;
-        }
-
-        .section-title span {
-            background: linear-gradient(135deg, #fbbf24, #f59e0b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        /* ========== DIVIDER ========== */
-        .section-divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(245,158,11,0.3), transparent);
-            margin: 0 auto;
-            max-width: 400px;
-        }
-
-        /* ========== STATS ========== */
-        .stat-number {
-            font-size: clamp(2rem, 5vw, 3.5rem);
-            font-weight: 800;
-            background: linear-gradient(135deg, #ffffff, #fbbf24);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            line-height: 1;
-        }
-
-        /* ========== TIMELINE ========== */
-        .timeline-line {
-            position: absolute;
-            right: 27px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: linear-gradient(to bottom, rgba(245,158,11,0.3), rgba(245,158,11,0.05));
-        }
-
-        .timeline-dot {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: #f59e0b;
-            border: 3px solid #09090b;
-            position: absolute;
-            right: 21px;
-            top: 8px;
-            z-index: 2;
-            box-shadow: 0 0 10px rgba(245,158,11,0.5);
-        }
-
-        .timeline-dot::after {
-            content: '';
-            position: absolute;
-            inset: -6px;
-            border-radius: 50%;
-            border: 2px solid rgba(245,158,11,0.3);
-            animation: pulse-ring 2s ease-out infinite;
-        }
-
-        /* ========== CODE BLOCK ========== */
-        .code-block {
-            background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 12px;
-            font-family: 'Courier New', monospace;
-            direction: ltr;
-            text-align: left;
-            overflow-x: auto;
-            position: relative;
-        }
-
-        .code-block .code-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            background: rgba(255,255,255,0.02);
-        }
-
-        .code-block .dot-red {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #ef4444;
-        }
-
-        .code-block .dot-yellow {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #eab308;
-        }
-
-        .code-block .dot-green {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #22c55e;
-        }
-
-        .code-block pre {
-            padding: 16px;
-            margin: 0;
-            font-size: 13px;
-            line-height: 1.7;
-            color: #d4d4d8;
-        }
-
-        .code-block .keyword { color: #c084fc; }
-        .code-block .function { color: #60a5fa; }
-        .code-block .string { color: #4ade80; }
-        .code-block .number { color: #fb923c; }
-        .code-block .comment { color: #71717a; }
-
-        /* ========== MESH VISUALIZATION ========== */
-        .mesh-node {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(245,158,11,0.2);
-            border: 2px solid #f59e0b;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: absolute;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            z-index: 2;
-        }
-
-        .mesh-node:hover {
-            background: rgba(245,158,11,0.4);
-            transform: scale(1.2);
-            box-shadow: 0 0 20px rgba(245,158,11,0.4);
-        }
-
-        .mesh-node.active {
-            animation: pulse-glow 2s infinite;
-        }
-
-        .mesh-connection {
-            position: absolute;
-            height: 2px;
-            background: linear-gradient(90deg, rgba(245,158,11,0.1), rgba(245,158,11,0.4), rgba(245,158,11,0.1));
-            transform-origin: right center;
-            z-index: 1;
-        }
-
-        .mesh-connection.animated {
-            background: linear-gradient(90deg, transparent, rgba(245,158,11,0.6), transparent);
-            animation: shimmer 2s infinite;
-            background-size: 200% 100%;
-        }
-
-        /* ========== SIGNAL ANIMATION ========== */
-        .signal-wave {
-            position: absolute;
-            border: 2px solid rgba(245,158,11,0.3);
-            border-radius: 50%;
-            animation: signalWave 2s ease-out infinite;
-        }
-
-        .signal-wave:nth-child(2) { animation-delay: 0.5s; }
-        .signal-wave:nth-child(3) { animation-delay: 1s; }
-
-        /* ========== BUS ANIMATION ========== */
-        .bus-track {
-            position: relative;
-            height: 4px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 2px;
-            overflow: visible;
-        }
-
-        .bus-track-fill {
-            position: absolute;
-            right: 0;
-            top: 0;
-            height: 100%;
-            background: linear-gradient(90deg, #f59e0b, #fbbf24);
-            border-radius: 2px;
-            transition: width 1.5s ease;
-        }
-
-        .bus-icon-track {
-            position: absolute;
-            top: -12px;
-            transition: right 1.5s ease;
-            font-size: 20px;
-            filter: drop-shadow(0 0 8px rgba(245,158,11,0.5));
-        }
-
-        .station-dot {
-            position: absolute;
-            top: -6px;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #22c55e;
-            border: 3px solid #09090b;
-            box-shadow: 0 0 10px rgba(34,197,94,0.5);
-        }
-
-        /* ========== FAQ ========== */
-        .faq-item {
-            border: 1px solid rgba(255,255,255,0.07);
-            border-radius: 12px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            background: rgba(255,255,255,0.02);
-        }
-
-        .faq-item:hover {
-            border-color: rgba(245,158,11,0.2);
-        }
-
-        .faq-item.active {
-            border-color: rgba(245,158,11,0.3);
-            background: rgba(245,158,11,0.03);
-        }
-
-        .faq-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px 24px;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .faq-header h4 {
-            font-weight: 600;
-            font-size: 16px;
-        }
-
-        .faq-icon {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: rgba(245,158,11,0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            flex-shrink: 0;
-        }
-
-        .faq-item.active .faq-icon {
-            background: #f59e0b;
-            transform: rotate(45deg);
-        }
-
-        .faq-body {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .faq-item.active .faq-body {
-            max-height: 300px;
-        }
-
-        .faq-body-inner {
-            padding: 0 24px 20px;
-            color: #a1a1aa;
-            font-size: 15px;
-            line-height: 1.8;
-        }
-
-        /* ========== CTA BUTTON ========== */
-        .cta-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 14px 32px;
-            background: #ffffff;
-            color: #09090b;
-            font-weight: 700;
-            font-size: 15px;
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .cta-button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(255,255,255,0.2);
-        }
-
-        .cta-button-amber {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #09090b;
-        }
-
-        .cta-button-amber:hover {
-            box-shadow: 0 0 30px rgba(245,158,11,0.4);
-        }
-
-        .cta-button-outline {
-            background: transparent;
-            color: #ffffff;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .cta-button-outline:hover {
-            background: rgba(255,255,255,0.05);
-            border-color: rgba(255,255,255,0.4);
-        }
-
-        /* ========== WHATSAPP FLOAT ========== */
-        .whatsapp-float {
-            position: fixed;
-            bottom: 30px;
-            left: 30px;
-            z-index: 1000;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: #25D366;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 20px rgba(37,211,102,0.4);
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .whatsapp-float:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 30px rgba(37,211,102,0.6);
-        }
-
-        .whatsapp-float::before {
-            content: '';
-            position: absolute;
-            inset: -6px;
-            border-radius: 50%;
-            border: 2px solid rgba(37,211,102,0.4);
-            animation: pulse-ring 2s ease-out infinite;
-        }
-
-        .whatsapp-float svg {
-            width: 30px;
-            height: 30px;
-            fill: white;
-        }
-
-        .whatsapp-tooltip {
-            position: absolute;
-            right: 72px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(0,0,0,0.9);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 500;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.3s ease;
-        }
-
-        .whatsapp-float:hover .whatsapp-tooltip {
-            opacity: 1;
-        }
-
-        /* ========== NAV ========== */
-        .nav-glass {
-            background: rgba(9,9,11,0.8);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            transition: all 0.3s ease;
-        }
-
-        .nav-glass.scrolled {
-            background: rgba(9,9,11,0.95);
-            box-shadow: 0 4px 30px rgba(0,0,0,0.3);
-        }
-
-        .nav-link {
-            color: #a1a1aa;
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.3s ease;
-            text-decoration: none;
-            padding: 8px 0;
-            position: relative;
-        }
-
-        .nav-link:hover {
-            color: #ffffff;
-        }
-
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 0;
-            height: 2px;
-            background: #f59e0b;
-            transition: width 0.3s ease;
-        }
-
-        .nav-link:hover::after {
-            width: 100%;
-        }
-
-        /* ========== MOBILE NAV ========== */
-        .mobile-menu {
-            position: fixed;
-            inset: 0;
-            z-index: 90;
-            background: rgba(9,9,11,0.98);
-            backdrop-filter: blur(20px);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 24px;
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.4s ease;
-        }
-
-        .mobile-menu.open {
-            opacity: 1;
-            pointer-events: all;
-        }
-
-        .mobile-menu a {
-            color: #ffffff;
-            font-size: 20px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .mobile-menu a:hover {
-            color: #f59e0b;
-        }
-
-        /* ========== TECH STACK BADGES ========== */
-        .tech-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 500;
-            color: #d4d4d8;
-            transition: all 0.3s ease;
-        }
-
-        .tech-badge:hover {
-            background: rgba(245,158,11,0.1);
-            border-color: rgba(245,158,11,0.3);
-            color: #fbbf24;
-        }
-
-        /* ========== COMPARISON TABLE ========== */
-        .comparison-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.07);
-        }
-
-        .comparison-table th {
-            padding: 16px 20px;
-            background: rgba(245,158,11,0.1);
-            font-weight: 700;
-            font-size: 14px;
-            color: #fbbf24;
-            text-align: right;
-            border-bottom: 1px solid rgba(245,158,11,0.2);
-        }
-
-        .comparison-table td {
-            padding: 14px 20px;
-            background: rgba(255,255,255,0.02);
-            font-size: 14px;
-            color: #d4d4d8;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .comparison-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .comparison-table tr:hover td {
-            background: rgba(255,255,255,0.04);
-        }
-
-        .check-icon {
-            color: #22c55e;
-        }
-
-        .cross-icon {
-            color: #ef4444;
-        }
-
-        /* ========== PROGRESS BAR ========== */
-        .progress-bar-bg {
-            height: 8px;
-            background: rgba(255,255,255,0.08);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            border-radius: 4px;
-            background: linear-gradient(90deg, #f59e0b, #fbbf24);
-            transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
-            width: 0;
-        }
-
-        .progress-bar-fill.animated {
-            width: var(--progress);
-        }
-
-        /* ========== LIVE DEMO ========== */
-        .live-dot {
-            width: 8px;
-            height: 8px;
-            background: #22c55e;
-            border-radius: 50%;
-            animation: blink 1.5s infinite;
-        }
-
-        .data-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            font-size: 14px;
-        }
-
-        .data-row:last-child {
-            border-bottom: none;
-        }
-
-        .data-label {
-            color: #a1a1aa;
-        }
-
-        .data-value {
-            color: #ffffff;
-            font-weight: 600;
-            font-family: 'Courier New', monospace;
-            direction: ltr;
-        }
-
-        /* ========== TOAST ========== */
-        .toast {
-            position: fixed;
-            top: 100px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-20px);
-            background: rgba(34,197,94,0.15);
-            border: 1px solid rgba(34,197,94,0.3);
-            color: #4ade80;
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.4s ease;
-            z-index: 2000;
-            backdrop-filter: blur(12px);
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        /* ========== MAP PLACEHOLDER ========== */
-        .map-container {
-            position: relative;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.07);
-            background: rgba(0,0,0,0.3);
-            aspect-ratio: 16/9;
-        }
-
-        .map-grid {
-            position: absolute;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(245,158,11,0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(245,158,11,0.05) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-
-        .map-road {
-            position: absolute;
-            background: rgba(255,255,255,0.08);
-            border-radius: 2px;
-        }
-
-        .map-bus {
-            position: absolute;
-            font-size: 24px;
-            transition: all 2s ease;
-            filter: drop-shadow(0 0 10px rgba(245,158,11,0.6));
-            z-index: 5;
-        }
-
-        .map-station {
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            background: #22c55e;
-            border-radius: 50%;
-            border: 3px solid #09090b;
-            box-shadow: 0 0 12px rgba(34,197,94,0.5);
-            z-index: 4;
-        }
-
-        .map-station-label {
-            position: absolute;
-            font-size: 10px;
-            color: #a1a1aa;
-            white-space: nowrap;
-            z-index: 4;
-        }
-
-        /* ========== RESPONSIVE ========== */
-        @media (max-width: 768px) {
-            .hero-title {
-                font-size: clamp(2rem, 10vw, 3.5rem);
-            }
-
-            .section-title {
-                font-size: clamp(1.5rem, 5vw, 2.2rem);
-            }
-
-            .whatsapp-float {
-                bottom: 20px;
-                left: 20px;
-                width: 52px;
-                height: 52px;
-            }
-
-            .whatsapp-tooltip {
-                display: none;
-            }
-
-            .timeline-line {
-                right: 19px;
-            }
-
-            .timeline-dot {
-                right: 13px;
-            }
-
-            .comparison-table {
-                font-size: 12px;
-            }
-
-            .comparison-table th,
-            .comparison-table td {
-                padding: 10px 12px;
-            }
-        }
-
-        /* ========== HAMBURGER ========== */
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            gap: 5px;
-            cursor: pointer;
-            z-index: 100;
-            padding: 4px;
-        }
-
-        .hamburger span {
-            width: 24px;
-            height: 2px;
-            background: #ffffff;
-            transition: all 0.3s ease;
-            border-radius: 2px;
-        }
-
-        .hamburger.open span:nth-child(1) {
-            transform: rotate(45deg) translate(5px, 5px);
-        }
-
-        .hamburger.open span:nth-child(2) {
-            opacity: 0;
-        }
-
-        .hamburger.open span:nth-child(3) {
-            transform: rotate(-45deg) translate(5px, -5px);
-        }
-
-        @media (max-width: 768px) {
-            .hamburger {
-                display: flex;
-            }
-            .desktop-nav {
-                display: none;
-            }
-        }
-
-        /* ========== SMOOTH SCROLL ========== */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* ========== SELECTION ========== */
-        ::selection {
-            background: rgba(245,158,11,0.3);
-            color: #ffffff;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>LoraTrak — نظام تتبع الحافلات الذكي</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #03060f;
+  --bg2: #060c1a;
+  --bg3: #0a1428;
+  --blue: #2563eb;
+  --blue-l: #3b82f6;
+  --blue-xl: #60a5fa;
+  --cyan: #06b6d4;
+  --cyan-l: #22d3ee;
+  --white: #f0f6ff;
+  --muted: #7aa0cc;
+  --border: rgba(37,99,235,0.18);
+  --border2: rgba(37,99,235,0.08);
+  --glow: rgba(37,99,235,0.35);
+  --radius: 14px;
+  --font: 'IBM Plex Sans Arabic', sans-serif;
+  --mono: 'Space Mono', monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--white);overflow-x:hidden}
+::selection{background:rgba(37,99,235,0.4);color:#fff}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--blue);border-radius:3px}
+
+/* BG LAYERS */
+.bg-canvas{position:fixed;inset:0;z-index:-3;background:var(--bg)}
+.bg-grid{position:fixed;inset:0;z-index:-2;
+  background-image:linear-gradient(rgba(37,99,235,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(37,99,235,0.04) 1px,transparent 1px);
+  background-size:48px 48px}
+.bg-aurora{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.aurora-1{position:absolute;width:700px;height:700px;border-radius:50%;
+  background:radial-gradient(circle,rgba(37,99,235,0.12) 0%,transparent 70%);
+  top:-200px;right:-150px;animation:drift1 12s ease-in-out infinite}
+.aurora-2{position:absolute;width:600px;height:600px;border-radius:50%;
+  background:radial-gradient(circle,rgba(6,182,212,0.08) 0%,transparent 70%);
+  bottom:-200px;left:-100px;animation:drift2 15s ease-in-out infinite}
+.aurora-3{position:absolute;width:400px;height:400px;border-radius:50%;
+  background:radial-gradient(circle,rgba(37,99,235,0.06) 0%,transparent 70%);
+  top:50%;left:50%;transform:translate(-50%,-50%);animation:drift1 8s ease-in-out infinite reverse}
+
+@keyframes drift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-40px) scale(1.05)}}
+@keyframes drift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-20px,30px) scale(1.08)}}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse-ring{0%{transform:scale(1);opacity:1}100%{transform:scale(2);opacity:0}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes scan{0%{transform:translateY(-100%)}100%{transform:translateY(400%)}}
+@keyframes ping{0%{transform:scale(1);opacity:0.8}100%{transform:scale(2.2);opacity:0}}
+
+.fade-up{opacity:0;transform:translateY(32px);transition:all 0.75s cubic-bezier(.16,1,.3,1)}
+.fade-up.in{opacity:1;transform:translateY(0)}
+.fade-up.d1{transition-delay:.1s}.fade-up.d2{transition-delay:.2s}.fade-up.d3{transition-delay:.3s}
+.fade-up.d4{transition-delay:.4s}.fade-up.d5{transition-delay:.5s}.fade-up.d6{transition-delay:.6s}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 32px;
+  background:rgba(3,6,15,0.8);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border2);transition:all .3s}
+nav.scrolled{background:rgba(3,6,15,0.95);box-shadow:0 4px 40px rgba(0,0,0,.5)}
+.nav-inner{max-width:1280px;margin:0 auto;height:64px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-icon{width:38px;height:38px;border-radius:10px;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  display:flex;align-items:center;justify-content:center;font-size:18px}
+.logo-text{font-size:17px;font-weight:700;color:var(--white);letter-spacing:-.5px}
+.logo-text span{color:var(--cyan-l)}
+.nav-links{display:flex;align-items:center;gap:28px;list-style:none}
+.nav-links a{color:var(--muted);font-size:13.5px;font-weight:500;text-decoration:none;
+  transition:color .25s;position:relative}
+.nav-links a:hover{color:var(--white)}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;right:0;width:0;height:1.5px;
+  background:var(--cyan-l);transition:width .25s}
+.nav-links a:hover::after{width:100%}
+.nav-cta{padding:8px 20px;background:var(--blue);border:none;border-radius:8px;
+  color:#fff;font-size:13px;font-weight:600;cursor:pointer;
+  font-family:var(--font);transition:all .25s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.nav-cta:hover{background:var(--blue-l);box-shadow:0 0 20px var(--glow)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;background:none;border:none}
+.hamburger span{width:22px;height:2px;background:var(--white);transition:all .3s;border-radius:2px;display:block}
+.hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+.hamburger.open span:nth-child(2){opacity:0}
+.hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+
+/* MOBILE MENU */
+.mobile-menu{position:fixed;inset:0;z-index:90;background:rgba(3,6,15,.97);backdrop-filter:blur(20px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;
+  opacity:0;pointer-events:none;transition:opacity .35s}
+.mobile-menu.open{opacity:1;pointer-events:all}
+.mobile-menu a{color:var(--white);font-size:19px;font-weight:600;text-decoration:none;transition:color .25s}
+.mobile-menu a:hover{color:var(--cyan-l)}
+
+/* HERO */
+#hero{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:100px 32px 60px;text-align:center;position:relative}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:5px 16px;
+  background:rgba(37,99,235,0.12);border:1px solid rgba(37,99,235,0.3);border-radius:999px;
+  font-size:12px;font-weight:600;color:var(--cyan-l);margin-bottom:28px;
+  animation:fadeUp .8s ease-out both}
+.status-dot{width:7px;height:7px;background:#22c55e;border-radius:50%;animation:blink 2s infinite}
+h1.hero-title{font-size:clamp(3rem,9vw,7rem);font-weight:700;line-height:1;
+  letter-spacing:-2px;margin-bottom:24px;
+  background:linear-gradient(135deg,#ffffff 0%,#93c5fd 40%,var(--cyan-l) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:fadeUp .8s .15s ease-out both}
+.hero-sub{font-size:clamp(1rem,2.2vw,1.25rem);color:var(--muted);max-width:680px;margin:0 auto 14px;
+  line-height:1.75;animation:fadeUp .8s .3s ease-out both}
+.hero-sub2{font-size:14.5px;color:#4d7bad;max-width:560px;margin:0 auto 40px;
+  animation:fadeUp .8s .4s ease-out both}
+.hero-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;margin-bottom:48px;
+  animation:fadeUp .8s .5s ease-out both}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;padding:13px 30px;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;
+  font-weight:700;font-size:14.5px;border-radius:10px;border:none;cursor:pointer;
+  transition:all .3s;text-decoration:none;font-family:var(--font)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(37,99,235,.45)}
+.btn-outline{display:inline-flex;align-items:center;gap:8px;padding:13px 30px;
+  background:transparent;color:var(--white);font-weight:600;font-size:14.5px;
+  border-radius:10px;border:1px solid rgba(255,255,255,0.15);cursor:pointer;
+  transition:all .3s;text-decoration:none;font-family:var(--font)}
+.btn-outline:hover{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.3)}
+.tech-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;
+  animation:fadeUp .8s .65s ease-out both}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;
+  background:rgba(37,99,235,0.07);border:1px solid var(--border);border-radius:8px;
+  font-size:12.5px;color:var(--muted);transition:all .25s}
+.chip:hover{background:rgba(37,99,235,0.15);color:var(--blue-xl);border-color:rgba(37,99,235,.4)}
+.chip-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan-l)}
+.scroll-hint{margin-top:56px;display:flex;flex-direction:column;align-items:center;gap:8px;
+  color:#2a4a7f;animation:fadeUp .8s .85s ease-out both}
+.scroll-hint span{font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase}
+.scroll-orb{width:24px;height:40px;border-radius:12px;border:1.5px solid #1e3a6e;
+  display:flex;justify-content:center;padding-top:6px}
+.scroll-dot{width:4px;height:8px;background:var(--blue-xl);border-radius:2px;animation:float 2s ease-in-out infinite}
+
+/* CARDS */
+.card{background:rgba(6,12,26,0.7);border:1px solid var(--border);border-radius:var(--radius);
+  transition:all .4s cubic-bezier(.25,.46,.45,.94);position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;right:0;width:100%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(37,99,235,0.4),transparent);opacity:0;transition:opacity .4s}
+.card:hover{border-color:rgba(37,99,235,.4);transform:translateY(-4px);
+  box-shadow:0 16px 48px rgba(0,0,0,.4),0 0 24px rgba(37,99,235,.08)}
+.card:hover::before{opacity:1}
+
+/* SECTION COMMON */
+section{padding:100px 32px}
+.section-inner{max-width:1280px;margin:0 auto}
+.section-head{text-align:center;margin-bottom:64px}
+.tag{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;
+  background:rgba(37,99,235,0.08);border:1px solid rgba(37,99,235,0.2);border-radius:999px;
+  font-size:11px;font-weight:700;color:var(--blue-xl);text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px}
+h2.st{font-size:clamp(1.7rem,4vw,2.8rem);font-weight:700;line-height:1.2;color:var(--white)}
+h2.st span{background:linear-gradient(135deg,var(--blue-xl),var(--cyan-l));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.section-desc{color:var(--muted);font-size:16px;max-width:600px;margin:16px auto 0;line-height:1.75}
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(37,99,235,0.25),transparent);max-width:480px;margin:0 auto}
+
+/* STATS */
+#stats{padding:48px 32px}
+.stats-grid{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.stat-card{card;padding:28px 20px;text-align:center;background:rgba(6,12,26,0.7);
+  border:1px solid var(--border);border-radius:var(--radius)}
+.stat-num{font-family:var(--mono);font-size:clamp(1.8rem,4vw,2.8rem);font-weight:400;
+  background:linear-gradient(135deg,#fff,var(--blue-xl));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1}
+.stat-unit{color:var(--cyan-l);font-size:12px;font-weight:600;margin-top:4px}
+.stat-label{color:#3d6494;font-size:12.5px;margin-top:6px}
+
+/* ABOUT */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.about-card{card;padding:28px}
+.icon-box{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:22px}
+.ib-blue{background:rgba(37,99,235,0.15);border:1px solid rgba(37,99,235,0.25)}
+.ib-green{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.2)}
+.ib-cyan{background:rgba(6,182,212,0.12);border:1px solid rgba(6,182,212,0.2)}
+.ib-purple{background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.2)}
+.about-card h3{font-size:17px;font-weight:700;margin-bottom:10px}
+.about-card p,.about-card ul{color:var(--muted);font-size:14px;line-height:1.75}
+.about-card ul{list-style:none;space-y:6px}
+.about-card li{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.about-card li::before{content:'';display:block;width:5px;height:5px;border-radius:50%;background:var(--cyan-l);flex-shrink:0}
+.about-card strong{color:var(--white)}
+
+/* COMPONENTS */
+.comp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.comp-card{card;padding:24px}
+.comp-tag{font-size:11px;font-weight:700;color:var(--cyan-l);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
+.comp-card h3{font-size:15px;font-weight:700;margin-bottom:10px}
+.comp-card p{color:var(--muted);font-size:13px;line-height:1.65;margin-bottom:16px}
+.comp-specs{list-style:none;display:flex;flex-direction:column;gap:6px}
+.comp-specs li{display:flex;align-items:center;gap:7px;font-size:12px;color:#4d7bad}
+.comp-specs .dot2{width:4px;height:4px;border-radius:50%;background:var(--blue-xl);flex-shrink:0}
+.perf-card{card;padding:28px;margin-top:20px}
+.perf-card h3{font-size:16px;font-weight:700;margin-bottom:24px}
+.perf-rows{display:flex;flex-direction:column;gap:18px}
+.pr-label{display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px}
+.pr-label span:first-child{color:var(--muted)}
+.pr-label span:last-child{color:var(--cyan-l);font-family:var(--mono);font-size:12px}
+.pbar{height:6px;background:rgba(37,99,235,0.12);border-radius:3px;overflow:hidden}
+.pbar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--blue),var(--cyan-l));
+  width:0;transition:width 1.5s cubic-bezier(.16,1,.3,1)}
+
+/* HOW IT WORKS */
+.timeline{position:relative;padding-right:40px}
+.tl-line{position:absolute;right:18px;top:0;bottom:0;width:2px;
+  background:linear-gradient(to bottom,rgba(37,99,235,0.5),rgba(37,99,235,0.05))}
+.tl-step{position:relative;margin-bottom:32px}
+.tl-dot{width:12px;height:12px;border-radius:50%;background:var(--blue-xl);
+  border:3px solid var(--bg);position:absolute;right:12px;top:12px;z-index:2;
+  box-shadow:0 0 12px rgba(37,99,235,.6)}
+.tl-dot::after{content:'';position:absolute;inset:-5px;border-radius:50%;
+  border:1.5px solid rgba(37,99,235,.3);animation:pulse-ring 2.5s ease-out infinite}
+.tl-body{card;padding:22px 22px 22px 22px;margin-right:28px}
+.tl-num{display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border-radius:7px;background:rgba(37,99,235,.2);
+  border:1px solid rgba(37,99,235,.3);color:var(--blue-xl);font-weight:700;font-size:12px;
+  margin-left:10px;flex-shrink:0}
+.tl-title{display:flex;align-items:center;margin-bottom:10px}
+.tl-title h3{font-size:15.5px;font-weight:700}
+.tl-body p{color:var(--muted);font-size:13.5px;line-height:1.75}
+
+/* MESH */
+.mesh-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.mesh-viz{card;padding:24px;height:380px;position:relative;overflow:hidden;background:rgba(3,6,15,.8)}
+.mesh-viz canvas{width:100%;height:100%}
+.mesh-info{display:flex;flex-direction:column;gap:16px}
+.mi-card{card;padding:20px}
+.mi-card h3{font-size:14px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;color:var(--white)}
+.mi-card h3 .ic{color:var(--cyan-l);font-size:16px}
+.mi-card p{color:var(--muted);font-size:13px;line-height:1.65}
+
+/* HAVERSINE */
+.hav-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.formula-box{background:rgba(0,0,0,.5);border:1px solid var(--border);border-radius:10px;
+  padding:28px;text-align:center;margin-bottom:16px;font-family:var(--mono);font-size:13px;direction:ltr}
+.formula-line{color:var(--blue-xl);line-height:2}
+.formula-sep{color:#1e3a6e;font-size:10px;margin:6px 0}
+.formula-result{color:var(--white);font-weight:700}
+.var-list{list-style:none;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+.var-list li span{color:var(--blue-xl);font-family:var(--mono)}
+.code-block{background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.07);border-radius:12px;overflow:hidden;direction:ltr}
+.cb-header{display:flex;align-items:center;gap:7px;padding:10px 16px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06)}
+.cb-dot{width:11px;height:11px;border-radius:50%}
+.cb-dot.r{background:#ef4444}.cb-dot.y{background:#f59e0b}.cb-dot.g{background:#22c55e}
+.cb-filename{color:#3d6494;font-size:11px;font-family:var(--mono);margin-right:8px}
+pre{padding:16px;margin:0;font-size:12.5px;line-height:1.75;color:#8fb4d8;font-family:var(--mono);overflow-x:auto}
+.kw{color:#818cf8}.fn{color:#60a5fa}.str{color:#34d399}.num{color:#fb923c}.cm{color:#374971}
+.calc-box{card;padding:22px}
+.calc-box h3{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.inp-wrap label{display:block;font-size:11px;color:#3d6494;margin-bottom:5px}
+.inp-wrap input{width:100%;background:rgba(0,0,0,.4);border:1px solid var(--border);
+  border-radius:8px;padding:9px 12px;font-size:13px;color:var(--white);font-family:var(--mono);
+  direction:ltr;outline:none;transition:border-color .25s;font-family:var(--mono)}
+.inp-wrap input:focus{border-color:var(--blue-l)}
+.btn-calc{width:100%;padding:11px;background:linear-gradient(135deg,var(--blue),var(--cyan));
+  border:none;border-radius:8px;color:#fff;font-weight:700;font-size:13px;cursor:pointer;
+  font-family:var(--font);transition:all .25s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-calc:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(37,99,235,.4)}
+.calc-result{margin-top:12px;display:none;background:rgba(0,0,0,.4);border:1px solid rgba(37,99,235,.3);
+  border-radius:10px;padding:16px;display:none}
+.cr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:center}
+.cr-val{font-family:var(--mono);font-size:1.3rem;font-weight:700;line-height:1}
+.cr-label{font-size:11px;color:#3d6494;margin-top:4px}
+
+/* COMPARISON */
+.cmp-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13.5px}
+.cmp-table thead th{padding:14px 18px;background:rgba(37,99,235,.1);color:var(--blue-xl);
+  font-weight:700;text-align:right;border-bottom:1px solid rgba(37,99,235,.2);font-size:12.5px}
+.cmp-table thead th:first-child{color:var(--white)}
+.cmp-table tbody td{padding:13px 18px;background:rgba(6,12,26,.5);color:#7aa0cc;
+  border-bottom:1px solid rgba(37,99,235,.06)}
+.cmp-table tbody tr:last-child td{border-bottom:none}
+.cmp-table tbody tr:hover td{background:rgba(37,99,235,.05)}
+.cmp-table td.feat{color:var(--white);font-weight:600}
+.yes{color:#22c55e}.no{color:#ef4444}.amber{color:var(--blue-xl);font-weight:600}
+
+/* LIVE DEMO */
+.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.map-box{card;position:relative;aspect-ratio:16/9;overflow:hidden;background:rgba(3,6,15,.9)}
+.map-bg-grid{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(37,99,235,.06) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(37,99,235,.06) 1px,transparent 1px);background-size:32px 32px}
+.map-road{position:absolute;background:rgba(255,255,255,.07);border-radius:2px}
+.map-station{position:absolute;width:14px;height:14px;border-radius:50%;
+  background:#22c55e;border:2.5px solid var(--bg);box-shadow:0 0 10px rgba(34,197,94,.5);z-index:4}
+.map-station-label{position:absolute;font-size:9px;color:#3d6494;white-space:nowrap;z-index:4}
+.map-bus{position:absolute;font-size:22px;z-index:5;transition:all 2s cubic-bezier(.45,0,.55,1);
+  filter:drop-shadow(0 0 8px rgba(37,99,235,.7))}
+.map-live-badge{position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:6px;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);
+  border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;z-index:10}
+.data-panel{display:flex;flex-direction:column;gap:14px}
+.dp-card{card}
+.dp-header{padding:12px 16px;border-bottom:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:space-between}
+.dp-header h3{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:7px;color:var(--white)}
+.data-row{display:flex;justify-content:space-between;align-items:center;
+  padding:10px 16px;border-bottom:1px solid rgba(37,99,235,.05);font-size:13px}
+.data-row:last-child{border-bottom:none}
+.dr-label{color:var(--muted)}
+.dr-val{font-family:var(--mono);font-size:12px;color:var(--white);font-weight:600}
+.dr-val.green{color:#22c55e}.dr-val.cyan{color:var(--cyan-l)}
+.route-card{card;padding:16px}
+.route-card h3{font-size:13.5px;font-weight:700;margin-bottom:16px;color:var(--white)}
+.bus-track{position:relative;height:4px;background:rgba(37,99,235,.15);border-radius:2px;margin-bottom:20px}
+.bt-fill{position:absolute;top:0;right:0;height:100%;border-radius:2px;
+  background:linear-gradient(90deg,var(--blue),var(--cyan-l));transition:width 2s ease}
+.bt-bus{position:absolute;top:-12px;font-size:22px;transition:right 2s ease}
+.bt-stop{position:absolute;top:-5px;width:14px;height:14px;border-radius:50%;
+  background:#22c55e;border:2px solid var(--bg)}
+.route-labels{display:flex;justify-content:space-between;font-size:10px;color:#2a4a7f}
+.signal-card{card;padding:16px}
+.signal-card h3{font-size:13.5px;font-weight:700;margin-bottom:12px;color:var(--white)}
+.sig-bars{display:flex;align-items:flex-end;gap:5px;height:36px}
+.sig-bar{width:14px;border-radius:2px;transition:height .5s,background .5s}
+.sig-rssi{font-size:11px;color:#3d6494;font-family:var(--mono);margin-top:8px;direction:ltr}
+
+/* USE CASES */
+.uc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.uc-card{card;padding:24px}
+.uc-icon{font-size:2rem;margin-bottom:14px}
+.uc-card h3{font-size:15px;font-weight:700;margin-bottom:8px}
+.uc-card p{color:var(--muted);font-size:13px;line-height:1.65}
+
+/* ARCHITECTURE */
+.arch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.arch-card{card;padding:22px}
+.arch-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border2)}
+.arch-label.hw{color:var(--blue-xl);border-color:rgba(37,99,235,.2)}
+.arch-label.comm{color:#22c55e;border-color:rgba(34,197,94,.15)}
+.arch-label.app{color:var(--cyan-l);border-color:rgba(6,182,212,.15)}
+.arch-item{display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(0,0,0,.2);border-radius:8px;margin-bottom:8px}
+.arch-item:last-child{margin-bottom:0}
+.ai-icon{font-size:16px;flex-shrink:0}
+.ai-name{font-size:13px;font-weight:600;color:var(--white)}
+.ai-sub{font-size:11px;color:#3d6494}
+
+/* FAQ */
+.faq-list{display:flex;flex-direction:column;gap:10px;max-width:800px;margin:0 auto}
+.faq-item{background:rgba(6,12,26,.7);border:1px solid var(--border2);border-radius:var(--radius);
+  overflow:hidden;transition:border-color .3s}
+.faq-item.open{border-color:rgba(37,99,235,.35)}
+.faq-q{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;
+  cursor:pointer;user-select:none}
+.faq-q h4{font-size:15px;font-weight:600;color:var(--white)}
+.faq-icon{width:26px;height:26px;border-radius:50%;background:rgba(37,99,235,.12);
+  display:flex;align-items:center;justify-content:center;transition:all .3s;flex-shrink:0;color:var(--blue-xl);font-size:18px;line-height:1}
+.faq-item.open .faq-icon{background:var(--blue);transform:rotate(45deg);color:#fff}
+.faq-ans{max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.16,1,.3,1)}
+.faq-item.open .faq-ans{max-height:300px}
+.faq-ans-inner{padding:0 22px 18px;color:var(--muted);font-size:14px;line-height:1.8}
+
+/* CTA */
+.cta-box{card;padding:72px 48px;text-align:center;position:relative;overflow:hidden}
+.cta-glow{position:absolute;pointer-events:none}
+.cta-glow-1{top:-120px;right:-120px;width:400px;height:400px;border-radius:50%;
+  background:radial-gradient(circle,rgba(37,99,235,.15) 0%,transparent 70%)}
+.cta-glow-2{bottom:-120px;left:-120px;width:400px;height:400px;border-radius:50%;
+  background:radial-gradient(circle,rgba(6,182,212,.1) 0%,transparent 70%)}
+.cta-icon{width:64px;height:64px;border-radius:18px;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:28px}
+.cta-box h2{font-size:clamp(1.6rem,3.5vw,2.5rem);font-weight:700;margin-bottom:14px}
+.cta-box p{color:var(--muted);font-size:16px;max-width:560px;margin:0 auto 36px;line-height:1.75}
+.cta-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
+.cta-note{color:#2a4a7f;font-size:13px;margin-top:18px}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border2);padding:64px 32px 32px}
+.footer-inner{max-width:1280px;margin:0 auto}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:48px;margin-bottom:48px}
+.footer-brand p{color:#2a4a7f;font-size:13.5px;line-height:1.75;margin-top:14px;max-width:340px}
+.footer-col h4{font-size:13px;font-weight:700;color:var(--white);margin-bottom:16px;letter-spacing:.04em}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+.footer-col a{color:#2a4a7f;font-size:13px;text-decoration:none;transition:color .25s}
+.footer-col a:hover{color:var(--blue-xl)}
+.footer-bottom{border-top:1px solid var(--border2);padding-top:24px;
+  display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#1e3a6e}
+.footer-bottom a{color:#1e3a6e;text-decoration:none;transition:color .25s}
+.footer-bottom a:hover{color:var(--muted)}
+
+/* TOAST */
+.toast{position:fixed;top:84px;left:50%;transform:translateX(-50%) translateY(-10px);
+  background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);
+  color:#4ade80;padding:10px 22px;border-radius:10px;font-size:13.5px;font-weight:500;
+  opacity:0;pointer-events:none;transition:all .4s;z-index:999;backdrop-filter:blur(12px)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* WHATSAPP */
+.wa-float{position:fixed;bottom:28px;left:28px;z-index:200;width:56px;height:56px;
+  border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 20px rgba(37,211,102,.4);transition:all .3s;text-decoration:none}
+.wa-float:hover{transform:scale(1.1);box-shadow:0 4px 32px rgba(37,211,102,.6)}
+.wa-float::before{content:'';position:absolute;inset:-7px;border-radius:50%;
+  border:2px solid rgba(37,211,102,.3);animation:pulse-ring 2.2s ease-out infinite}
+.wa-float svg{width:28px;height:28px;fill:white}
+.wa-tip{position:absolute;right:66px;top:50%;transform:translateY(-50%);
+  background:rgba(0,0,0,.9);border:1px solid rgba(255,255,255,.1);
+  color:#fff;padding:6px 14px;border-radius:8px;font-size:12px;white-space:nowrap;
+  opacity:0;pointer-events:none;transition:all .3s}
+.wa-float:hover .wa-tip{opacity:1}
+
+/* RESPONSIVE */
+@media(max-width:1024px){
+  .about-grid,.comp-grid,.arch-grid,.uc-grid{grid-template-columns:1fr 1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:768px){
+  section{padding:72px 20px}
+  #stats{padding:36px 20px}
+  nav{padding:0 20px}
+  .nav-links,.nav-cta.desk{display:none}
+  .hamburger{display:flex}
+  .about-grid,.comp-grid,.arch-grid,.uc-grid,.hav-grid,.mesh-grid,.demo-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .footer-grid{grid-template-columns:1fr}
+  .footer-bottom{flex-direction:column;gap:8px;text-align:center}
+  .cta-box{padding:48px 24px}
+  .input-grid{grid-template-columns:1fr}
+  h1.hero-title{letter-spacing:-1px}
+}
+</style>
 </head>
 <body>
 
-    <!-- Global Background -->
-    <div class="global-bg"></div>
-    <div class="grid-overlay"></div>
+<div class="bg-canvas"></div>
+<div class="bg-grid"></div>
+<div class="bg-aurora"><div class="aurora-1"></div><div class="aurora-2"></div><div class="aurora-3"></div></div>
+<div class="toast" id="toast"></div>
 
-    <!-- Toast Notification -->
-    <div class="toast" id="toast"></div>
-
-    <!-- Navigation -->
-    <nav class="nav-glass fixed top-0 right-0 left-0 z-50" id="navbar">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-            <!-- Logo -->
-            <a href="#hero" class="flex items-center gap-3 text-decoration-none" style="text-decoration:none">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
-                    <i data-lucide="radio" class="w-5 h-5 text-black"></i>
-                </div>
-                <span class="text-white font-bold text-lg">LoraTrak</span>
-            </a>
-
-            <!-- Desktop Nav -->
-            <div class="desktop-nav flex items-center gap-8">
-                <a href="#about" class="nav-link">عن المشروع</a>
-                <a href="#components" class="nav-link">المكونات</a>
-                <a href="#how-it-works" class="nav-link">طريقة العمل</a>
-                <a href="#mesh" class="nav-link">شبكة Mesh</a>
-                <a href="#haversine" class="nav-link">حساب المسافة</a>
-                <a href="#demo" class="nav-link">عرض حي</a>
-                <a href="#faq" class="nav-link">الأسئلة</a>
-            </div>
-
-            <!-- CTA + Hamburger -->
-            <div class="flex items-center gap-4">
-                <a href="https://wa.me/212698078610" target="_blank"
-                   class="hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 text-black font-semibold text-sm rounded-lg hover:bg-amber-400 transition-all"
-                   style="text-decoration:none">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                    تواصل معنا
-                </a>
-                <div class="hamburger" id="hamburger" onclick="toggleMobile()">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Mobile Menu -->
-    <div class="mobile-menu" id="mobileMenu">
-        <a href="#about" onclick="toggleMobile()">عن المشروع</a>
-        <a href="#components" onclick="toggleMobile()">المكونات</a>
-        <a href="#how-it-works" onclick="toggleMobile()">طريقة العمل</a>
-        <a href="#mesh" onclick="toggleMobile()">شبكة Mesh</a>
-        <a href="#haversine" onclick="toggleMobile()">حساب المسافة</a>
-        <a href="#demo" onclick="toggleMobile()">عرض حي</a>
-        <a href="#faq" onclick="toggleMobile()">الأسئلة الشائعة</a>
-        <a href="https://wa.me/212698078610" target="_blank" onclick="toggleMobile()"
-           class="inline-flex items-center gap-2 px-6 py-3 bg-green-500 text-white font-semibold rounded-xl mt-4"
-           style="text-decoration:none">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            تواصل عبر واتساب
-        </a>
+<!-- NAV -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="#hero" class="logo">
+      <div class="logo-icon">📡</div>
+      <div class="logo-text">Lora<span>Trak</span></div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#about">المشروع</a></li>
+      <li><a href="#components">المكونات</a></li>
+      <li><a href="#how-it-works">طريقة العمل</a></li>
+      <li><a href="#mesh">Mesh</a></li>
+      <li><a href="#haversine">الحسابات</a></li>
+      <li><a href="#demo">عرض حي</a></li>
+      <li><a href="#faq">الأسئلة</a></li>
+    </ul>
+    <div style="display:flex;align-items:center;gap:10px">
+      <a href="https://wa.me/212698078610" target="_blank" class="nav-cta desk">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        تواصل
+      </a>
+      <button class="hamburger" id="hamburger" onclick="toggleMobile()">
+        <span></span><span></span><span></span>
+      </button>
     </div>
+  </div>
+</nav>
 
-    <!-- ==================== HERO ==================== -->
-    <section id="hero" class="relative min-h-screen flex items-center justify-center px-6 pt-20 overflow-hidden">
-        <div class="hero-bg">
-            <div class="glow-1"></div>
-            <div class="glow-2"></div>
-            <div class="glow-3"></div>
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#about" onclick="toggleMobile()">المشروع</a>
+  <a href="#components" onclick="toggleMobile()">المكونات</a>
+  <a href="#how-it-works" onclick="toggleMobile()">طريقة العمل</a>
+  <a href="#mesh" onclick="toggleMobile()">Mesh Network</a>
+  <a href="#haversine" onclick="toggleMobile()">الحسابات</a>
+  <a href="#demo" onclick="toggleMobile()">عرض حي</a>
+  <a href="#faq" onclick="toggleMobile()">الأسئلة</a>
+  <a href="https://wa.me/212698078610" target="_blank" onclick="toggleMobile()"
+     style="padding:12px 28px;background:#25D366;border-radius:10px;color:#fff;font-weight:700;margin-top:8px">
+    تواصل عبر واتساب
+  </a>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div style="max-width:900px;margin:0 auto">
+    <div class="hero-badge"><span class="status-dot"></span> نظام تتبع ذكي في الوقت الحقيقي</div>
+    <h1 class="hero-title">LoraTrak</h1>
+    <p class="hero-sub">نظام متطور لتتبع الحافلات باستخدام <strong style="color:var(--blue-xl)">LoRa</strong> و <strong style="color:var(--cyan-l)">Mesh Network</strong> — بدون إنترنت، بدون حدود</p>
+    <p class="hero-sub2">حل مبتكر يوفر تتبعاً دقيقاً للحافلات مع حساب تلقائي للمسافة والوقت المتبقي للوصول</p>
+    <div class="hero-btns">
+      <a href="#demo" class="btn-primary">▶ عرض توضيحي حي</a>
+      <a href="https://wa.me/212698078610" target="_blank" class="btn-outline">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        تواصل معنا
+      </a>
+    </div>
+    <div class="tech-chips">
+      <div class="chip"><span class="chip-dot"></span> LoRa SX1276</div>
+      <div class="chip"><span class="chip-dot"></span> GPS Neo-6M</div>
+      <div class="chip"><span class="chip-dot"></span> ESP32</div>
+      <div class="chip"><span class="chip-dot"></span> Mesh Network</div>
+      <div class="chip"><span class="chip-dot"></span> LCD I2C</div>
+      <div class="chip"><span class="chip-dot"></span> AES-128</div>
+    </div>
+    <div class="scroll-hint">
+      <span>اكتشف المزيد</span>
+      <div class="scroll-orb"><div class="scroll-dot"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="stats">
+  <div class="stats-grid">
+    <div class="stat-card fade-up"><div class="stat-num" data-target="15">0</div><div class="stat-unit">كيلومتر</div><div class="stat-label">مدى الاتصال</div></div>
+    <div class="stat-card fade-up d1"><div class="stat-num" data-target="2">0</div><div class="stat-unit">متر</div><div class="stat-label">دقة GPS</div></div>
+    <div class="stat-card fade-up d2"><div class="stat-num" data-target="72">0</div><div class="stat-unit">ساعة</div><div class="stat-label">عمر البطارية</div></div>
+    <div class="stat-card fade-up d3"><div class="stat-num" data-target="99">0</div><div class="stat-unit">%</div><div class="stat-label">موثوقية الشبكة</div></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-inner">
+    <div class="section-head fade-up">
+      <div class="tag">📌 نبذة عن المشروع</div>
+      <h2 class="st">ما هو <span>LoraTrak</span>؟</h2>
+      <p class="section-desc">نظام ذكي مصمم لحل مشكلة تتبع الحافلات في المناطق التي تعاني من ضعف تغطية الإنترنت</p>
+    </div>
+    <div class="about-grid">
+      <div class="card about-card fade-up d1">
+        <div class="icon-box ib-blue">🎯</div>
+        <h3>المشكلة</h3>
+        <p>في العديد من المدن والمناطق الريفية، لا تتوفر تغطية إنترنت مستقرة، مما يجعل أنظمة التتبع التقليدية التي تعتمد على GPS + 4G/WiFi غير فعالة. الركاب لا يعرفون متى ستصل الحافلة، مما يسبب هدراً كبيراً للوقت.</p>
+      </div>
+      <div class="card about-card fade-up d2">
+        <div class="icon-box ib-green">💡</div>
+        <h3>الحل</h3>
+        <p><strong>LoraTrak</strong> يستخدم تقنية LoRa للاتصال بعيد المدى بدون إنترنت، مع شبكة Mesh لتمرير البيانات بين العقد. يتم حساب المسافة والوقت المتبقي محلياً وعرضه على شاشات LCD وواجهة ويب عند توفر الاتصال.</p>
+      </div>
+      <div class="card about-card fade-up d3">
+        <div class="icon-box ib-cyan">👥</div>
+        <h3>الفئة المستهدفة</h3>
+        <ul>
+          <li>شركات النقل العمومي</li>
+          <li>إدارات النقل المدرسي والجامعي</li>
+          <li>النقل بين المدن في المناطق الريفية</li>
+          <li>المشاريع الذكية والمدن الذكية</li>
+        </ul>
+      </div>
+      <div class="card about-card fade-up d4">
+        <div class="icon-box ib-purple">🏆</div>
+        <h3>القيمة المضافة</h3>
+        <ul>
+          <li>تقليل وقت الانتظار بنسبة تصل إلى 60%</li>
+          <li>خفض تكاليف التشغيل (لا حاجة لبطاقات SIM)</li>
+          <li>تحسين رضا الركاب بشكل ملحوظ</li>
+          <li>بيانات تحليلية لتحسين الخطوط</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- COMPONENTS -->
+<section id="components">
+  <div class="section-inner">
+    <div class="section-head fade-up">
+      <div class="tag">⚙️ الأجزاء الإلكترونية</div>
+      <h2 class="st">مكونات <span>النظام</span></h2>
+      <p class="section-desc">كل مكون تم اختياره بعناية لضمان الأداء الأمثل والموثوقية العالية</p>
+    </div>
+    <div class="comp-grid">
+      <div class="card comp-card fade-up d1">
+        <div class="comp-tag">عقدة الحافلة</div>
+        <h3>🚌 Node</h3>
+        <p>جهاز صغير يتم تركيبه داخل كل حافلة، يحتوي على وحدة GPS ومودم LoRa ومتحكم دقيق.</p>
+        <ul class="comp-specs">
+          <li><span class="dot2"></span>ESP32 / Arduino Pro Mini</li>
+          <li><span class="dot2"></span>بطارية Li-Po 3.7V 2000mAh</li>
+          <li><span class="dot2"></span>علبة مقاومة للماء IP65</li>
+        </ul>
+      </div>
+      <div class="card comp-card fade-up d2">
+        <div class="comp-tag">محطة الاستقبال</div>
+        <h3>🏢 Station</h3>
+        <p>تُركّب عند كل محطة حافلات، تستقبل البيانات من العقد وتحسب المسافة والوقت.</p>
+        <ul class="comp-specs">
+          <li><span class="dot2"></span>شاشة LCD 20x4 I2C</li>
+          <li><span class="dot2"></span>وحدة ESP32 + Wi-Fi</li>
+          <li><span class="dot2"></span>تشغيل بالطاقة الشمسية</li>
+        </ul>
+      </div>
+      <div class="card comp-card fade-up d3">
+        <div class="comp-tag">وحدة GPS</div>
+        <h3>🛰️ Neo-6M</h3>
+        <p>تحدد الموقع الجغرافي بدقة عالية وتوفر إحداثيات خط الطول والعرض.</p>
+        <ul class="comp-specs">
+          <li><span class="dot2"></span>دقة 2.5 متر CEP</li>
+          <li><span class="dot2"></span>وقت تثبيت سريع TTFF</li>
+          <li><span class="dot2"></span>بروتوكول NMEA 0183</li>
+        </ul>
+      </div>
+      <div class="card comp-card fade-up d4">
+        <div class="comp-tag">الاتصال اللاسلكي</div>
+        <h3>📻 LoRa SX1276</h3>
+        <p>توفر اتصالاً بعيد المدى يصل إلى 15 كم مع استهلاك طاقة منخفض جداً.</p>
+        <ul class="comp-specs">
+          <li><span class="dot2"></span>تردد 433MHz / 868MHz</li>
+          <li><span class="dot2"></span>تشفير AES-128</li>
+          <li><span class="dot2"></span>استهلاك 10mA في وضع الإرسال</li>
+        </ul>
+      </div>
+      <div class="card comp-card fade-up d5">
+        <div class="comp-tag">شاشة العرض</div>
+        <h3>🖥️ LCD 20×4</h3>
+        <p>تعرض معلومات الحافلة مباشرة للمسافرين عند المحطة.</p>
+        <ul class="comp-specs">
+          <li><span class="dot2"></span>20 عمود × 4 أسطر</li>
+          <li><span class="dot2"></span>اتصال I2C (2 أسلاك فقط)</li>
+          <li><span class="dot2"></span>إضاءة خلفية LED زرقاء</li>
+        </ul>
+      </div>
+      <div class="card comp-card fade-up d6">
+        <div class="comp-tag">واجهة المستخدم</div>
+        <h3>🌐 Web Dashboard</h3>
+        <p>لوحة تحكم ويب لعرض مواقع الحافلات على خريطة تفاعلية.</p>
+        <ul class="comp-specs">
+          <li><span class="dot2"></span>خريطة Leaflet.js</li>
+          <li><span class="dot2"></span>PHP + MySQL backend</li>
+          <li><span class="dot2"></span>تحديث تلقائي كل 5 ثوانٍ</li>
+        </ul>
+      </div>
+    </div>
+    <div class="perf-card card fade-up">
+      <h3>📊 أداء المكونات</h3>
+      <div class="perf-rows">
+        <div><div class="pr-label"><span>مدى LoRa</span><span>15 كم</span></div><div class="pbar"><div class="pbar-fill" style="--p:85%"></div></div></div>
+        <div><div class="pr-label"><span>دقة GPS</span><span>2.5 م</span></div><div class="pbar"><div class="pbar-fill" style="--p:95%"></div></div></div>
+        <div><div class="pr-label"><span>عمر البطارية</span><span>72 ساعة</span></div><div class="pbar"><div class="pbar-fill" style="--p:72%"></div></div></div>
+        <div><div class="pr-label"><span>سرعة نقل البيانات</span><span>50 kbps</span></div><div class="pbar"><div class="pbar-fill" style="--p:40%"></div></div></div>
+        <div><div class="pr-label"><span>موثوقية الشبكة</span><span>99.2%</span></div><div class="pbar"><div class="pbar-fill" style="--p:99%"></div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- HOW IT WORKS -->
+<section id="how-it-works">
+  <div class="section-inner">
+    <div class="section-head fade-up">
+      <div class="tag">⚡ آلية العمل</div>
+      <h2 class="st">كيف يعمل <span>النظام</span>؟</h2>
+      <p class="section-desc">من قراءة GPS إلى عرض البيانات على الشاشة، كل خطوة تتم تلقائياً</p>
+    </div>
+    <div class="timeline">
+      <div class="tl-line"></div>
+      <div class="tl-step fade-up d1">
+        <div class="tl-dot"></div>
+        <div class="tl-body card">
+          <div class="tl-title"><span class="tl-num">1</span><h3>قراءة بيانات GPS</h3></div>
+          <p>تقوم وحدة GPS داخل عقدة الحافلة بقراءة الإحداثيات الجغرافية بشكل دوري كل 5 ثوانٍ. يتم استخراج البيانات من جمل NMEA وتنقيتها من الضوضاء.</p>
         </div>
-        <div class="hero-particles" id="heroParticles"></div>
-
-        <div class="relative z-10 text-center max-w-5xl mx-auto">
-            <div class="hero-badge mb-8">
-                <span class="dot"></span>
-                نظام تتبع ذكي في الوقت الحقيقي
-            </div>
-
-            <h1 class="hero-title mb-6" style="animation: fadeInUp 1s ease-out">
-                LoraTrak
-            </h1>
-
-            <p class="text-xl md:text-2xl text-zinc-400 font-light max-w-3xl mx-auto mb-4" style="animation: fadeInUp 1s ease-out 0.2s both; line-height:1.7">
-                نظام متطور لتتبع الحافلات باستخدام تقنيات
-                <span class="text-amber-400 font-semibold">LoRa</span> و
-                <span class="text-amber-400 font-semibold">Mesh Network</span>
-            </p>
-            <p class="text-base text-zinc-500 max-w-2xl mx-auto mb-10" style="animation: fadeInUp 1s ease-out 0.35s both">
-                حل مبتكر يوفر تتبعاً دقيقاً للحافلات بدون الحاجة إلى اتصال إنترنت، مع حساب تلقائي للمسافة والوقت المتبقي للوصول
-            </p>
-
-            <div class="flex flex-wrap items-center justify-center gap-4 mb-12" style="animation: fadeInUp 1s ease-out 0.5s both">
-                <a href="#demo" class="cta-button cta-button-amber">
-                    <i data-lucide="play" class="w-5 h-5"></i>
-                    عرض توضيحي حي
-                </a>
-                <a href="https://wa.me/212698078610" target="_blank" class="cta-button cta-button-outline">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                    تواصل معنا
-                </a>
-            </div>
-
-            <!-- Tech Badges -->
-            <div class="flex flex-wrap items-center justify-center gap-3" style="animation: fadeInUp 1s ease-out 0.65s both">
-                <div class="tech-badge">
-                    <i data-lucide="radio" class="w-4 h-4 text-amber-500"></i>
-                    LoRa SX1276
-                </div>
-                <div class="tech-badge">
-                    <i data-lucide="satellite" class="w-4 h-4 text-amber-500"></i>
-                    GPS Neo-6M
-                </div>
-                <div class="tech-badge">
-                    <i data-lucide="cpu" class="w-4 h-4 text-amber-500"></i>
-                    ESP32
-                </div>
-                <div class="tech-badge">
-                    <i data-lucide="network" class="w-4 h-4 text-amber-500"></i>
-                    Mesh Network
-                </div>
-                <div class="tech-badge">
-                    <i data-lucide="monitor" class="w-4 h-4 text-amber-500"></i>
-                    LCD I2C
-                </div>
-            </div>
-
-            <!-- Scroll indicator -->
-            <div class="mt-16" style="animation: fadeInUp 1s ease-out 0.8s both">
-                <div class="flex flex-col items-center gap-2 text-zinc-600">
-                    <span class="text-xs font-medium">اكتشف المزيد</span>
-                    <div class="w-6 h-10 rounded-full border-2 border-zinc-700 flex items-start justify-center p-1.5">
-                        <div class="w-1.5 h-3 rounded-full bg-amber-500" style="animation: float 2s ease-in-out infinite"></div>
-                    </div>
-                </div>
-            </div>
+      </div>
+      <div class="tl-step fade-up d2">
+        <div class="tl-dot"></div>
+        <div class="tl-body card">
+          <div class="tl-title"><span class="tl-num">2</span><h3>حساب السرعة اللحظية</h3></div>
+          <p>باستخدام الفرق بين قراءتين GPS متتاليتين والزمن بينهما، يتم حساب السرعة اللحظية. يتم تطبيق فلتر Moving Average لتنعيم القراءات.</p>
         </div>
-    </section>
-
-    <!-- ==================== STATS ==================== -->
-    <section class="py-16 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div class="glass-card p-6 text-center animate-on-scroll">
-                    <div class="stat-number" data-target="15">0</div>
-                    <div class="text-amber-500 text-sm font-semibold mt-1">كم</div>
-                    <div class="text-zinc-500 text-sm mt-1">مدى الاتصال</div>
-                </div>
-                <div class="glass-card p-6 text-center animate-on-scroll delay-1">
-                    <div class="stat-number" data-target="100">0</div>
-                    <div class="text-amber-500 text-sm font-semibold mt-1">متر</div>
-                    <div class="text-zinc-500 text-sm mt-1">دقة GPS</div>
-                </div>
-                <div class="glass-card p-6 text-center animate-on-scroll delay-2">
-                    <div class="stat-number" data-target="72">0</div>
-                    <div class="text-amber-500 text-sm font-semibold mt-1">ساعة</div>
-                    <div class="text-zinc-500 text-sm mt-1">عمر البطارية</div>
-                </div>
-                <div class="glass-card p-6 text-center animate-on-scroll delay-3">
-                    <div class="stat-number" data-target="500">0</div>
-                    <div class="text-amber-500 text-sm font-semibold mt-1">ميلي ثانية</div>
-                    <div class="text-zinc-500 text-sm mt-1">زمن الاستجابة</div>
-                </div>
-            </div>
+      </div>
+      <div class="tl-step fade-up d3">
+        <div class="tl-dot"></div>
+        <div class="tl-body card">
+          <div class="tl-title"><span class="tl-num">3</span><h3>تغليف البيانات في Packet</h3></div>
+          <p>يتم تجميع البيانات في حزمة تحتوي على: معرف الحافلة، الإحداثيات، السرعة، الطابع الزمني، ورقم تسلسلي للتحقق من سلامة البيانات.</p>
         </div>
-    </section>
-
-    <div class="section-divider"></div>
-
-    <!-- ==================== ABOUT ==================== -->
-    <section id="about" class="py-24 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-16 animate-on-scroll">
-                <div class="section-badge mb-4">
-                    <i data-lucide="info" class="w-4 h-4"></i>
-                    نبذة عن المشروع
-                </div>
-                <h2 class="section-title">ما هو <span>LoraTrak</span>؟</h2>
-                <p class="text-zinc-400 text-lg mt-4 max-w-3xl mx-auto leading-relaxed">
-                    نظام ذكي ومتطور مصمم لحل مشكلة تتبع الحافلات في المناطق التي تعاني من ضعف تغطية الإنترنت
-                </p>
-            </div>
-
-            <div class="grid md:grid-cols-2 gap-8">
-                <div class="glass-card p-8 animate-on-scroll delay-1">
-                    <div class="icon-container mb-5">
-                        <i data-lucide="target" class="w-6 h-6 text-amber-500"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">المشكلة</h3>
-                    <p class="text-zinc-400 leading-relaxed">
-                        في العديد من المدن والمناطق الريفية، لا تتوفر تغطية إنترنت مستقرة، مما يجعل أنظمة التتبع التقليدية التي تعتمد على GPS + 4G/WiFi غير فعالة. الركاب لا يعرفون متى ستصل الحافلة، مما يسبب هدراً كبيراً للوقت.
-                    </p>
-                </div>
-
-                <div class="glass-card p-8 animate-on-scroll delay-2">
-                    <div class="icon-container mb-5" style="background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2);">
-                        <i data-lucide="lightbulb" class="w-6 h-6 text-green-500"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">الحل</h3>
-                    <p class="text-zinc-400 leading-relaxed">
-                        <strong class="text-white">LoraTrak</strong> يستخدم تقنية LoRa للاتصال بعيد المدى بدون إنترنت، مع شبكة Mesh لتمرير البيانات بين العقد. يتم حساب المسافة والوقت المتبقي محلياً وعرضه على شاشات LCD وواجهة ويب عند توفر الاتصال.
-                    </p>
-                </div>
-
-                <div class="glass-card p-8 animate-on-scroll delay-3">
-                    <div class="icon-container mb-5" style="background: rgba(96,165,250,0.1); border-color: rgba(96,165,250,0.2);">
-                        <i data-lucide="users" class="w-6 h-6 text-blue-400"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">الفئة المستهدفة</h3>
-                    <ul class="text-zinc-400 space-y-2">
-                        <li class="flex items-center gap-2">
-                            <i data-lucide="check" class="w-4 h-4 text-green-500 flex-shrink-0"></i>
-                            شركات النقل العمومي
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <i data-lucide="check" class="w-4 h-4 text-green-500 flex-shrink-0"></i>
-                            إدارات النقل المدرسي والجامعي
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <i data-lucide="check" class="w-4 h-4 text-green-500 flex-shrink-0"></i>
-                            النقل بين المدن في المناطق الريفية
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <i data-lucide="check" class="w-4 h-4 text-green-500 flex-shrink-0"></i>
-                            المشاريع الذكية والمدن الذكية
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="glass-card p-8 animate-on-scroll delay-4">
-                    <div class="icon-container mb-5" style="background: rgba(192,132,252,0.1); border-color: rgba(192,132,252,0.2);">
-                        <i data-lucide="award" class="w-6 h-6 text-purple-400"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-3">القيمة المضافة</h3>
-                    <ul class="text-zinc-400 space-y-2">
-                        <li class="flex items-center gap-2">
-                            <i data-lucide="check" class="w-4 h-4 text-amber-500 flex-shrink-0"></i>
-                            تقليل وقت الانتظار بنسبة تصل إلى 60%
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <i data-lucide="check" class="w-4 h-4 text-amber-500 flex-shrink-0"></i>
-                            خفض تكاليف التشغيل (لا حاجة لبطاقات SIM)
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <i data-lucide="check" class="w-4 h-4 text-amber-500 flex-shrink-0"></i>
-                            تحسين رضا الركاب بشكل ملحوظ
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <i data-lucide="check" class="w-4 h-4 text-amber-500 flex-shrink-0"></i>
-                            بيانات تحليلية لتحسين الخطوط
-                        </li>
-                    </ul>
-                </div>
-            </div>
+      </div>
+      <div class="tl-step fade-up d4">
+        <div class="tl-dot"></div>
+        <div class="tl-body card">
+          <div class="tl-title"><span class="tl-num">4</span><h3>الإرسال عبر LoRa Mesh</h3></div>
+          <p>يتم إرسال الحزمة عبر شبكة Mesh. إذا لم تكن المحطة في المدى المباشر، يتم تمرير البيانات عبر العقد الوسيطة تلقائياً حتى تصل.</p>
         </div>
-    </section>
-
-    <div class="section-divider"></div>
-
-    <!-- ==================== COMPONENTS ==================== -->
-    <section id="components" class="py-24 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-16 animate-on-scroll">
-                <div class="section-badge mb-4">
-                    <i data-lucide="cpu" class="w-4 h-4"></i>
-                    الأجزاء الإلكترونية
-                </div>
-                <h2 class="section-title">مكونات <span>النظام</span></h2>
-                <p class="text-zinc-400 text-lg mt-4 max-w-3xl mx-auto leading-relaxed">
-                    كل مكون تم اختياره بعناية لضمان الأداء الأمثل والموثوقية العالية
-                </p>
-            </div>
-
-            <div class="grid md:grid-cols-3 gap-6">
-                <!-- Node -->
-                <div class="glass-card p-6 animate-on-scroll delay-1">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/20 flex items-center justify-center mb-4">
-                        <i data-lucide="radio" class="w-6 h-6 text-amber-500"></i>
-                    </div>
-                    <h3 class="text-lg font-bold mb-2">عقدة الحافلة (Node)</h3>
-                    <p class="text-zinc-400 text-sm leading-relaxed mb-4">
-                        جهاز صغير يتم تركيبه داخل كل حافلة، يحتوي على وحدة GPS ومودم LoRa ومتحكم دقيق.
-                    </p>
-                    <div class="space-y-2">
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="chip" class="w-3 h-3 text-amber-500"></i>
-                            ESP32 / Arduino Pro Mini
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="battery" class="w-3 h-3 text-amber-500"></i>
-                            بطارية Li-Po 3.7V
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="box" class="w-3 h-3 text-amber-500"></i>
-                            علبة مقاومة للماء IP65
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Station -->
-                <div class="glass-card p-6 animate-on-scroll delay-2">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/10 border border-green-500/20 flex items-center justify-center mb-4">
-                        <i data-lucide="building" class="w-6 h-6 text-green-500"></i>
-                    </div>
-                    <h3 class="text-lg font-bold mb-2">محطة الاستقبال (Station)</h3>
-                    <p class="text-zinc-400 text-sm leading-relaxed mb-4">
-                        تُركّب عند كل محطة حافلات، تستقبل البيانات من العقد وتحسب المسافة والوقت.
-                    </p>
-                    <div class="space-y-2">
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="monitor" class="w-3 h-3 text-green-500"></i>
-                            شاشة LCD 20x4 I2C
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="wifi" class="w-3 h-3 text-green-500"></i>
-                            وحدة ESP32 + Wi-Fi
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="plug" class="w-3 h-3 text-green-500"></i>
-                            تشغيل بالطاقة الشمسية
-                        </div>
-                    </div>
-                </div>
-
-                <!-- GPS -->
-                <div class="glass-card p-6 animate-on-scroll delay-3">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/10 border border-blue-500/20 flex items-center justify-center mb-4">
-                        <i data-lucide="satellite" class="w-6 h-6 text-blue-400"></i>
-                    </div>
-                    <h3 class="text-lg font-bold mb-2">وحدة GPS</h3>
-                    <p class="text-zinc-400 text-sm leading-relaxed mb-4">
-                        تحدد الموقع الجغرافي بدقة عالية وتوفر إحداثيات خط الطول والعرض.
-                    </p>
-                    <div class="space-y-2">
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="crosshair" class="w-3 h-3 text-blue-400"></i>
-                            دقة 2.5 متر CEP
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="zap" class="w-3 h-3 text-blue-400"></i>
-                            وقت تثبيت سريع TTFF
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="file-text" class="w-3 h-3 text-blue-400"></i>
-                            بروتوكول NMEA 0183
-                        </div>
-                    </div>
-                </div>
-
-                <!-- LoRa -->
-                <div class="glass-card p-6 animate-on-scroll delay-4">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-600/10 border border-purple-500/20 flex items-center justify-center mb-4">
-                        <i data-lucide="radio-tower" class="w-6 h-6 text-purple-400"></i>
-                    </div>
-                    <h3 class="text-lg font-bold mb-2">وحدة LoRa</h3>
-                    <p class="text-zinc-400 text-sm leading-relaxed mb-4">
-                        توفر اتصالاً بعيد المدى يصل إلى 15 كم مع استهلاك طاقة منخفض جداً.
-                    </p>
-                    <div class="space-y-2">
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="settings" class="w-3 h-3 text-purple-400"></i>
-                            SX1276 / SX1278
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="signal" class="w-3 h-3 text-purple-400"></i>
-                            تردد 433MHz / 868MHz
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="shield" class="w-3 h-3 text-purple-400"></i>
-                            تشفير AES-128
-                        </div>
-                    </div>
-                </div>
-
-                <!-- LCD -->
-                <div class="glass-card p-6 animate-on-scroll delay-5">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-cyan-600/10 border border-cyan-500/20 flex items-center justify-center mb-4">
-                        <i data-lucide="tv" class="w-6 h-6 text-cyan-400"></i>
-                    </div>
-                    <h3 class="text-lg font-bold mb-2">شاشة LCD</h3>
-                    <p class="text-zinc-400 text-sm leading-relaxed mb-4">
-                        تعرض معلومات الحافلة مباشرة للمسافرين عند المحطة.
-                    </p>
-                    <div class="space-y-2">
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="grid" class="w-3 h-3 text-cyan-400"></i>
-                            20 عمود × 4 أسطر
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="cable" class="w-3 h-3 text-cyan-400"></i>
-                            اتصال I2C (2 أسلاك)
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="sun" class="w-3 h-3 text-cyan-400"></i>
-                            إضاءة خلفية LED
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Web Interface -->
-                <div class="glass-card p-6 animate-on-scroll delay-6">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-rose-500/20 to-rose-600/10 border border-rose-500/20 flex items-center justify-center mb-4">
-                        <i data-lucide="globe" class="w-6 h-6 text-rose-400"></i>
-                    </div>
-                    <h3 class="text-lg font-bold mb-2">واجهة الويب</h3>
-                    <p class="text-zinc-400 text-sm leading-relaxed mb-4">
-                        لوحة تحكم ويب لعرض مواقع الحافلات على خريطة تفاعلية.
-                    </p>
-                    <div class="space-y-2">
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="layout-dashboard" class="w-3 h-3 text-rose-400"></i>
-                            لوحة تحكم تفاعلية
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="map" class="w-3 h-3 text-rose-400"></i>
-                            خريطة Mapbox / Leaflet
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-zinc-500">
-                            <i data-lucide="database" class="w-3 h-3 text-rose-400"></i>
-                            قاعدة بيانات MySQL
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Performance Bars -->
-            <div class="mt-12 glass-card p-8 animate-on-scroll">
-                <h3 class="text-lg font-bold mb-6">أداء المكونات</h3>
-                <div class="space-y-5">
-                    <div>
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="text-zinc-400">مدى LoRa</span>
-                            <span class="text-amber-400 font-semibold">15 كم</span>
-                        </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" style="--progress: 85%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="text-zinc-400">دقة GPS</span>
-                            <span class="text-amber-400 font-semibold">2.5 م</span>
-                        </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" style="--progress: 95%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="text-zinc-400">عمر البطارية</span>
-                            <span class="text-amber-400 font-semibold">72 ساعة</span>
-                        </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" style="--progress: 72%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="text-zinc-400">سرعة نقل البيانات</span>
-                            <span class="text-amber-400 font-semibold">0.3-50 kbps</span>
-                        </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" style="--progress: 40%"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-sm mb-2">
-                            <span class="text-zinc-400">موثوقية الشبكة</span>
-                            <span class="text-amber-400 font-semibold">99.2%</span>
-                        </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" style="--progress: 99%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      </div>
+      <div class="tl-step fade-up d5">
+        <div class="tl-dot"></div>
+        <div class="tl-body card">
+          <div class="tl-title"><span class="tl-num">5</span><h3>حساب المسافة والوقت (Haversine)</h3></div>
+          <p>محطة الاستقبال تطبق معادلة Haversine لحساب المسافة بين الحافلة والمحطة. ثم تقسم المسافة على السرعة للحصول على وقت الوصول المتوقع.</p>
         </div>
-    </section>
-
-    <div class="section-divider"></div>
-
-    <!-- ==================== HOW IT WORKS ==================== -->
-    <section id="how-it-works" class="py-24 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-16 animate-on-scroll">
-                <div class="section-badge mb-4">
-                    <i data-lucide="workflow" class="w-4 h-4"></i>
-                    آلية العمل
-                </div>
-                <h2 class="section-title">كيف يعمل <span>النظام</span>؟</h2>
-                <p class="text-zinc-400 text-lg mt-4 max-w-3xl mx-auto leading-relaxed">
-                    من قراءة GPS إلى عرض البيانات على الشاشة، كل خطوة تتم تلقائياً وبكفاءة عالية
-                </p>
-            </div>
-
-            <div class="relative pr-14 md:pr-16">
-                <div class="timeline-line"></div>
-
-                <!-- Step 1 -->
-                <div class="relative mb-12 animate-on-scroll delay-1">
-                    <div class="timeline-dot"></div>
-                    <div class="glass-card p-6 mr-12">
-                        <div class="flex items-center gap-3 mb-3">
-                            <span class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-sm">1</span>
-                            <h3 class="font-bold text-lg">قراءة بيانات GPS</h3>
-                        </div>
-                        <p class="text-zinc-400 text-sm leading-relaxed">
-                            تقوم وحدة GPS داخل عقدة الحافلة بقراءة الإحداثيات الجغرافية (خط الطول Latitude وخط العرض Longitude) بشكل دوري كل 5 ثوانٍ. يتم استخراج البيانات من جمل NMEA وتنقيتها من الضوضاء.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Step 2 -->
-                <div class="relative mb-12 animate-on-scroll delay-2">
-                    <div class="timeline-dot"></div>
-                    <div class="glass-card p-6 mr-12">
-                        <div class="flex items-center gap-3 mb-3">
-                            <span class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-sm">2</span>
-                            <h3 class="font-bold text-lg">حساب السرعة</h3>
-                        </div>
-                        <p class="text-zinc-400 text-sm leading-relaxed">
-                            باستخدام الفرق بين قراءتين GPS متتاليتين والزمن بينهما، يتم حساب السرعة اللحظية للحافلة بوحدة كم/ساعة. يتم تطبيق فلتر متوسط متحرك (Moving Average) لتتنعيم القراءات.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Step 3 -->
-                <div class="relative mb-12 animate-on-scroll delay-3">
-                    <div class="timeline-dot"></div>
-                    <div class="glass-card p-6 mr-12">
-                        <div class="flex items-center gap-3 mb-3">
-                            <span class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-sm">3</span>
-                            <h3 class="font-bold text-lg">تغليف البيانات</h3>
-                        </div>
-                        <p class="text-zinc-400 text-sm leading-relaxed">
-                            يتم تجميع البيانات في حزمة (Packet) تحتوي على: معرف الحافلة (Bus ID)، الإحداثيات، السرعة، الطابع الزمني (Timestamp)، ورقم تسلسلي للتحقق من سلامة البيانات.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Step 4 -->
-                <div class="relative mb-12 animate-on-scroll delay-4">
-                    <div class="timeline-dot"></div>
-                    <div class="glass-card p-6 mr-12">
-                        <div class="flex items-center gap-3 mb-3">
-                            <span class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-sm">4</span>
-                            <h3 class="font-bold text-lg">الإرسال عبر LoRa Mesh</h3>
-                        </div>
-                        <p class="text-zinc-400 text-sm leading-relaxed">
-                            يتم إرسال الحزمة عبر شبكة Mesh. إذا لم تكن المحطة في المدى المباشر، يتم تمرير البيانات عبر العقد الوسيطة (Relay Nodes) تلقائياً حتى تصل إلى المحطة المستهدفة.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Step 5 -->
-                <div class="relative mb-12 animate-on-scroll delay-5">
-                    <div class="timeline-dot"></div>
-                    <div class="glass-card p-6 mr-12">
-                        <div class="flex items-center gap-3 mb-3">
-                            <span class="w-8 h-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-sm">5</span>
-                            <h3 class="font-bold text-lg">حساب المسافة والوقت</h3>
-                        </div>
-                        <p class="text-zinc-400 text-sm leading-relaxed">
-                            محطة الاستقبال تطبق معادلة Haversine لحساب المسافة بين الحافلة والمحطة. ثم تقسم المسافة على السرعة للحصول على الوقت المتبقي للوصول. يتم أخذ سرعة متوسطة للتعامل مع توقفات الحافلة.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Step 6 -->
-                <div class="relative animate-on-scroll delay-6">
-                    <div class="timeline-dot"></div>
-                    <div class="glass-card p-6 mr-12">
-                        <div class="flex items-center gap-3 mb-3">
-                            <span class="w-8 h-8 rounded-lg bg-green-500/20 border border-green-500/30 flex items-center justify-center text-green-400 font-bold text-sm">6</span>
-                            <h3 class="font-bold text-lg">عرض النتائج</h3>
-                        </div>
-                        <p class="text-zinc-400 text-sm leading-relaxed">
-                            يتم عرض البيانات على شاشة LCD في المحطة (رقم الحافلة، المسافة المتبقية، الوقت المتوقع). في نفس الوقت، إذا توفر Wi-Fi، يتم إرسال البيانات إلى خادم الويب لعرضها على الخريطة التفاعلية.
-                        </p>
-                    </div>
-                </div>
-            </div>
+      </div>
+      <div class="tl-step fade-up d6">
+        <div class="tl-dot"></div>
+        <div class="tl-body card">
+          <div class="tl-title"><span class="tl-num">6</span><h3>عرض النتائج للمسافرين</h3></div>
+          <p>يتم عرض البيانات على شاشة LCD في المحطة. في نفس الوقت، إذا توفر Wi-Fi، يتم إرسال البيانات إلى خادم الويب لعرضها على الخريطة التفاعلية.</p>
         </div>
-    </section>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <div class="section-divider"></div>
+<div class="divider"></div>
 
-    <!-- ==================== MESH NETWORK ==================== -->
-    <section id="mesh" class="py-24 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-16 animate-on-scroll">
-                <div class="section-badge mb-4">
-                    <i data-lucide="network" class="w-4 h-4"></i>
-                    بنية الشبكة
-                </div>
-                <h2 class="section-title">شبكة <span>Mesh Network</span></h2>
-                <p class="text-zinc-400 text-lg mt-4 max-w-3xl mx-auto leading-relaxed">
-                    شبكة لا مركزية حيث كل عقدة يمكنها إرسال واستقبال وتمرير البيانات
-                </p>
-            </div>
-
-            <div class="grid md:grid-cols-2 gap-8 items-center">
-                <!-- Mesh Visualization -->
-                <div class="glass-card p-8 animate-on-scroll delay-1">
-                    <div class="relative h-80 md:h-96 overflow-hidden rounded-xl bg-black/30" id="meshViz">
-                        <!-- Grid background -->
-                        <div class="absolute inset-0" style="background-image: linear-gradient(rgba(245,158,11,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,0.03) 1px, transparent 1px); background-size: 30px 30px;"></div>
-
-                        <!-- Nodes will be positioned by JS -->
-                        <div class="mesh-node active" style="top: 30%; right: 15%;" id="meshNode1">
-                            <i data-lucide="bus" class="w-4 h-4 text-amber-400"></i>
-                        </div>
-                        <div class="mesh-node" style="top: 50%; right: 40%;" id="meshNode2">
-                            <i data-lucide="radio" class="w-4 h-4 text-amber-400"></i>
-                        </div>
-                        <div class="mesh-node" style="top: 25%; right: 60%;" id="meshNode3">
-                            <i data-lucide="radio" class="w-4 h-4 text-amber-400"></i>
-                        </div>
-                        <div class="mesh-node" style="top: 65%; right: 65%;" id="meshNode4">
-                            <i data-lucide="radio" class="w-4 h-4 text-amber-400"></i>
-                        </div>
-                        <div class="mesh-node" style="top: 45%; right: 85%;" id="meshNode5">
-                            <i data-lucide="building" class="w-4 h-4 text-green-400"></i>
-                        </div>
-
-                        <!-- Labels -->
-                        <div class="absolute text-[10px] text-zinc-500 font-medium" style="top: calc(30% + 44px); right: 8%;">حافلة #01</div>
-                        <div class="absolute text-[10px] text-zinc-500 font-medium" style="top: calc(50% + 44px); right: 33%;">عقدة和中</div>
-                        <div class="absolute text-[10px] text-zinc-500 font-medium" style="top: calc(25% + 44px); right: 53%;">عقدة和中</div>
-                        <div class="absolute text-[10px] text-zinc-500 font-medium" style="top: calc(65% + 44px); right: 58%;">عقدة和中</div>
-                        <div class="absolute text-[10px] text-green-400 font-semibold" style="top: calc(45% + 44px); right: 78%;">المحطة</div>
-                    </div>
-                    <div class="mt-4 flex items-center gap-4 text-xs text-zinc-500">
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-amber-500/30 border border-amber-500"></div>
-                            عقدة LoRa
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 rounded-full bg-green-500/30 border border-green-500"></div>
-                            محطة استقبال
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-8 h-0.5 bg-amber-500/40 rounded"></div>
-                            اتصال نشط
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Mesh Info -->
-                <div class="space-y-6">
-                    <div class="glass-card p-6 animate-on-scroll delay-2">
-                        <h3 class="font-bold mb-3 flex items-center gap-2">
-                            <i data-lucide="git-branch" class="w-5 h-5 text-amber-500"></i>
-                            ما هي شبكة Mesh؟
-                        </h3>
-                        <p class="text-zinc-400 text-sm leading-relaxed">
-                            شبكة Mesh هي بنية اتصال لا مركزية حيث كل جهاز (عقدة) يتصل بعدة أجهزة أخرى، مما يخلق مسارات متعددة لنقل البيانات. إذا فشل مسار واحد، يتم إيجاد مسار بديل تلقائياً.
-                        </p>
-                    </div>
-
-                    <div class="glass-card p-6 animate-on-scroll delay-3">
-                        <h3 class="font-bold mb-3 flex items-center gap-2">
-                            <i data-lucide="repeat" class="w-5 h-5 text-amber-500"></i>
-                            تمرير البيانات (Relay)
-                        </h3>
-                        <p class="text-zinc-400 text-sm leading-relaxed">
-                            عندما لا تكون الحافلة في المدى المباشر للمحطة (أكثر من 15 كم)، تقوم العقد الوسيطة بتلقيم البيانات من عقدة إلى أخرى حتى تصل. كل عقدة تضيف معرفها كـ "hop" في الحزمة لمنع الحلقات.
-                        </p>
-                    </div>
-
-                    <div class="glass-card p-6 animate-on-scroll delay-4">
-                        <h3 class="font-bold mb-3 flex items-center gap-2">
-                            <i data-lucide="shield-check" class="w-5 h-5 text-amber-500"></i>
-                            الموثوقية والتسامح مع الأعطال
-                        </h3>
-                        <p class="text-zinc-400 text-sm leading-relaxed">
-                            بفضل تعدد المسارات، الشبكة تتحمل عطل أي عقدة وسيطة. يتم استخدام بروتوكول توجيه ذكي يختار أقصر مسار وأكثره موثوقية في كل مرة. نسبة تسليم البيانات تتجاوز 99%.
-                        </p>
-                    </div>
-
-                    <div class="glass-card p-6 animate-on-scroll delay-5">
-                        <h3 class="font-bold mb-3 flex items-center gap-2">
-                            <i data-lucide="maximize" class="w-5 h-5 text-amber-500"></i>
-                            قابلية التوسع
-                        </h3>
-                        <p class="text-zinc-400 text-sm leading-relaxed">
-                            يمكن إضافة عقد جديدة بسهولة بدون إعادة تكوين الشبكة. كل عقدة جديدة تزيد من تغطية الشبكة وقوتها. يمكن دعم عشرات الحافلات ومحطات متعددة في نفس الوقت.
-                        </p>
-                    </div>
-                </div>
-            </div>
+<!-- MESH -->
+<section id="mesh">
+  <div class="section-inner">
+    <div class="section-head fade-up">
+      <div class="tag">🔗 بنية الشبكة</div>
+      <h2 class="st">شبكة <span>Mesh Network</span></h2>
+      <p class="section-desc">شبكة لا مركزية حيث كل عقدة يمكنها إرسال واستقبال وتمرير البيانات</p>
+    </div>
+    <div class="mesh-grid">
+      <div class="mesh-viz card fade-up d1">
+        <canvas id="meshCanvas" style="width:100%;height:100%"></canvas>
+        <div style="position:absolute;bottom:12px;right:12px;display:flex;gap:14px;font-size:10px;color:#3d6494">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--blue-xl);display:inline-block"></span>عقدة LoRa</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block"></span>محطة</span>
         </div>
-    </section>
+      </div>
+      <div class="mesh-info">
+        <div class="card mi-card fade-up d2">
+          <h3><span class="ic">🔀</span> ما هي شبكة Mesh؟</h3>
+          <p>شبكة Mesh هي بنية اتصال لا مركزية حيث كل جهاز يتصل بعدة أجهزة أخرى، مما يخلق مسارات متعددة لنقل البيانات. إذا فشل مسار واحد، يتم إيجاد مسار بديل تلقائياً.</p>
+        </div>
+        <div class="card mi-card fade-up d3">
+          <h3><span class="ic">🔁</span> تمرير البيانات (Relay)</h3>
+          <p>عندما لا تكون الحافلة في المدى المباشر للمحطة، تقوم العقد الوسيطة بتمرير البيانات تلقائياً. كل عقدة تضيف معرفها كـ "hop" لمنع الحلقات.</p>
+        </div>
+        <div class="card mi-card fade-up d4">
+          <h3><span class="ic">🛡️</span> الموثوقية والتسامح مع الأعطال</h3>
+          <p>بفضل تعدد المسارات، الشبكة تتحمل عطل أي عقدة وسيطة. نسبة تسليم البيانات تتجاوز 99.2%.</p>
+        </div>
+        <div class="card mi-card fade-up d5">
+          <h3><span class="ic">↔️</span> قابلية التوسع</h3>
+          <p>يمكن إضافة عقد جديدة بسهولة بدون إعادة تكوين الشبكة. كل عقدة جديدة تزيد من تغطية الشبكة وتدعم عشرات الحافلات في نفس الوقت.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <div class="section-divider"></div>
+<div class="divider"></div>
 
-    <!-- ==================== HAVERSINE ==================== -->
-    <section id="haversine" class="py-24 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-16 animate-on-scroll">
-                <div class="section-badge mb-4">
-                    <i data-lucide="calculator" class="w-4 h-4"></i>
-                    المحرك الحسابي
-                </div>
-                <h2 class="section-title">معادلة <span>Haversine</span></h2>
-                <p class="text-zinc-400 text-lg mt-4 max-w-3xl mx-auto leading-relaxed">
-                    المعادلة الرياضية التي تحسب المسافة بين نقطتين على سطح الكرة الأرضية
-                </p>
-            </div>
+<!-- HAVERSINE -->
+<section id="haversine">
+  <div class="section-inner">
+    <div class="section-head fade-up">
+      <div class="tag">📐 المحرك الحسابي</div>
+      <h2 class="st">معادلة <span>Haversine</span></h2>
+      <p class="section-desc">المعادلة الرياضية التي تحسب المسافة بين نقطتين على سطح الكرة الأرضية</p>
+    </div>
+    <div class="hav-grid">
+      <div>
+        <div class="card fade-up d1" style="padding:28px;margin-bottom:16px">
+          <h3 style="font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px">∑ المعادلة الرياضية</h3>
+          <div class="formula-box">
+            <div class="formula-line">a = sin²(Δφ/2) + cos(φ₁)·cos(φ₂)·sin²(Δλ/2)</div>
+            <div class="formula-sep">──────────────────────────────</div>
+            <div class="formula-line">c = 2·atan2(√a, √(1−a))</div>
+            <div class="formula-sep">──────────────────────────────</div>
+            <div class="formula-result">d = R · c</div>
+          </div>
+          <ul class="var-list" style="margin-top:16px">
+            <li><span>φ</span> = خط العرض (Latitude)</li>
+            <li><span>λ</span> = خط الطول (Longitude)</li>
+            <li><span>R</span> = نصف قطر الأرض (6371 كم)</li>
+            <li><span>d</span> = المسافة بين النقطتين</li>
+          </ul>
+        </div>
+        <div class="card fade-up d2" style="padding:22px">
+          <h3 style="font-size:14px;font-weight:700;margin-bottom:8px">⚠️ لماذا Haversine؟</h3>
+          <p style="color:var(--muted);font-size:13px;line-height:1.75">معادلة Haversine أكثر دقة من حساب المسافة الإقليدية البسيطة لأنها تأخذ في الاعتبار انحناء الأرض. الخطأ باستخدام الطريقة الإقليدية قد يصل إلى 0.5%، بينما Haversine توفر دقة تتجاوز 99.9%.</p>
+        </div>
+      </div>
+      <div>
+        <div class="code-block fade-up d2" style="margin-bottom:16px">
+          <div class="cb-header">
+            <div class="cb-dot r"></div><div class="cb-dot y"></div><div class="cb-dot g"></div>
+            <span class="cb-filename">haversine.cpp</span>
+          </div>
+          <pre><span class="cm">// Haversine Formula</span>
+<span class="kw">#define</span> <span class="fn">R</span> <span class="num">6371000</span>
 
-            <div class="grid md:grid-cols-2 gap-8">
-                <!-- Formula -->
-                <div class="space-y-6">
-                    <div class="glass-card p-8 animate-on-scroll delay-1">
-                        <h3 class="font-bold mb-4 flex items-center gap-2">
-                            <i data-lucide="sigma" class="w-5 h-5 text-amber-500"></i>
-                            المعادلة الرياضية
-                        </h3>
-                        <div class="bg-black/40 rounded-xl p-6 border border-white/5 text-center" dir="ltr">
-                            <div class="text-amber-400 font-mono text-sm leading-loose">
-                                a = sin²(Δφ/2) + cos(φ₁)·cos(φ₂)·sin²(Δλ/2)
-                            </div>
-                            <div class="text-zinc-600 text-xs my-3">─────────────────────</div>
-                            <div class="text-amber-400 font-mono text-sm leading-loose">
-                                c = 2·atan2(√a, √(1−a))
-                            </div>
-                            <div class="text-zinc-600 text-xs my-3">─────────────────────</div>
-                            <div class="text-white font-mono text-sm leading-loose font-bold">
-                                d = R · c
-                            </div>
-                        </div>
-                        <div class="mt-4 space-y-2 text-sm text-zinc-400">
-                            <p><span class="text-amber-400 font-mono">φ</span> = خط العرض (Latitude)</p>
-                            <p><span class="text-amber-400 font-mono">λ</span> = خط الطول (Longitude)</p>
-                            <p><span class="text-amber-400 font-mono">R</span> = نصف قطر الأرض (6371 كم)</p>
-                            <p><span class="text-amber-400 font-mono">d</span> = المسافة بين النقطتين</p>
-                        </div>
-                    </div>
-
-                    <div class="glass-card p-6 animate-on-scroll delay-2">
-                        <h3 class="font-bold mb-3 flex items-center gap-2">
-                            <i data-lucide="alert-circle" class="w-5 h-5 text-amber-500"></i>
-                            لماذا Haversine؟
-                        </h3>
-                        <p class="text-zinc-400 text-sm leading-relaxed">
-                            معادلة Haversine أكثر دقة من حساب المسافة الإقليدية البسيطة لأنها تأخذ في الاعتبار انحناء الأرض. الخطأ في المسافات الطويلة باستخدام الطريقة الإقليدية قد يصل إلى 0.5%، بينما Haversine توفر دقة تتجاوز 99.9%.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Code + Calculator -->
-                <div class="space-y-6">
-                    <div class="code-block animate-on-scroll delay-2">
-                        <div class="code-header">
-                            <div class="dot-red"></div>
-                            <div class="dot-yellow"></div>
-                            <div class="dot-green"></div>
-                            <span class="text-zinc-500 text-xs mr-4">haversine.cpp</span>
-                        </div>
-                        <pre><span class="comment">// Haversine Formula Implementation</span>
-<span class="keyword">#define</span> <span class="function">R</span> <span class="number">6371000</span>  <span class="comment">// Earth radius in meters</span>
-
-<span class="keyword">double</span> <span class="function">haversine</span>(
-    <span class="keyword">double</span> lat1, <span class="keyword">double</span> lon1,
-    <span class="keyword">double</span> lat2, <span class="keyword">double</span> lon2
+<span class="kw">double</span> <span class="fn">haversine</span>(
+    <span class="kw">double</span> lat1, <span class="kw">double</span> lon1,
+    <span class="kw">double</span> lat2, <span class="kw">double</span> lon2
 ) {
-    <span class="keyword">double</span> dLat = <span class="function">toRadians</span>(lat2 - lat1);
-    <span class="keyword">double</span> dLon = <span class="function">toRadians</span>(lon2 - lon1);
+    <span class="kw">double</span> dLat = <span class="fn">toRad</span>(lat2 - lat1);
+    <span class="kw">double</span> dLon = <span class="fn">toRad</span>(lon2 - lon1);
 
-    <span class="keyword">double</span> a = <span class="function">sin</span>(dLat/<span class="number">2</span>) * <span class="function">sin</span>(dLat/<span class="number">2</span>) +
-               <span class="function">cos</span>(<span class="function">toRadians</span>(lat1)) *
-               <span class="function">cos</span>(<span class="function">toRadians</span>(lat2)) *
-               <span class="function">sin</span>(dLon/<span class="number">2</span>) * <span class="function">sin</span>(dLon/<span class="number">2</span>);
+    <span class="kw">double</span> a = <span class="fn">sin</span>(dLat/<span class="num">2</span>)*<span class="fn">sin</span>(dLat/<span class="num">2</span>) +
+        <span class="fn">cos</span>(<span class="fn">toRad</span>(lat1))*<span class="fn">cos</span>(<span class="fn">toRad</span>(lat2))*
+        <span class="fn">sin</span>(dLon/<span class="num">2</span>)*<span class="fn">sin</span>(dLon/<span class="num">2</span>);
 
-    <span class="keyword">double</span> c = <span class="number">2</span> * <span class="function">atan2</span>(
-        <span class="function">sqrt</span>(a), <span class="function">sqrt</span>(<span class="number">1</span>-a)
-    );
+    <span class="kw">double</span> c = <span class="num">2</span>*<span class="fn">atan2</span>(
+        <span class="fn">sqrt</span>(a), <span class="fn">sqrt</span>(<span class="num">1</span>-a));
 
-    <span class="keyword">return</span> R * c;  <span class="comment">// Distance in meters</span>
+    <span class="kw">return</span> R * c; <span class="cm">// meters</span>
 }
 
-<span class="comment">// Calculate ETA in minutes</span>
-<span class="keyword">int</span> <span class="function">calcETA</span>(<span class="keyword">double</span> dist_m, <span class="keyword">double</span> speed_kmh) {
-    <span class="keyword">if</span> (speed_kmh < <span class="number">1</span>) <span class="keyword">return</span> -<span class="number">1</span>;
-    <span class="keyword">double</span> hours = (dist_m/<span class="number">1000</span>) / speed_kmh;
-    <span class="keyword">return</span> (<span class="keyword">int</span>)(hours * <span class="number">60</span>);
+<span class="cm">// ETA in minutes</span>
+<span class="kw">int</span> <span class="fn">calcETA</span>(<span class="kw">double</span> dist_m, <span class="kw">double</span> spd) {
+    <span class="kw">if</span> (spd < <span class="num">1</span>) <span class="kw">return</span> -<span class="num">1</span>;
+    <span class="kw">return</span> (<span class="kw">int</span>)((dist_m/<span class="num">1000.0</span>)/spd*<span class="num">60</span>);
 }</pre>
-                    </div>
-
-                    <!-- Interactive Calculator -->
-                    <div class="glass-card p-6 animate-on-scroll delay-3">
-                        <h3 class="font-bold mb-4 flex items-center gap-2">
-                            <i data-lucide="calculator" class="w-5 h-5 text-amber-500"></i>
-                            جرب بنفسك
-                        </h3>
-                        <div class="grid grid-cols-2 gap-3 mb-4">
-                            <div>
-                                <label class="text-xs text-zinc-500 mb-1 block">خط عرض الحافلة</label>
-                                <input type="number" step="0.000001" value="33.971590" id="lat1"
-                                       class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 font-mono" dir="ltr">
-                            </div>
-                            <div>
-                                <label class="text-xs text-zinc-500 mb-1 block">خط طول الحافلة</label>
-                                <input type="number" step="0.000001" value="-6.849813" id="lon1"
-                                       class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 font-mono" dir="ltr">
-                            </div>
-                            <div>
-                                <label class="text-xs text-zinc-500 mb-1 block">خط عرض المحطة</label>
-                                <input type="number" step="0.000001" value="33.975500" id="lat2"
-                                       class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 font-mono" dir="ltr">
-                            </div>
-                            <div>
-                                <label class="text-xs text-zinc-500 mb-1 block">خط طول المحطة</label>
-                                <input type="number" step="0.000001" value="-6.842000" id="lon2"
-                                       class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 font-mono" dir="ltr">
-                            </div>
-                            <div class="col-span-2">
-                                <label class="text-xs text-zinc-500 mb-1 block">سرعة الحافلة (كم/س)</label>
-                                <input type="number" step="1" value="40" id="speed"
-                                       class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 font-mono" dir="ltr">
-                            </div>
-                        </div>
-                        <button onclick="calculateHaversine()" class="w-full cta-button cta-button-amber justify-center text-sm">
-                            <i data-lucide="play" class="w-4 h-4"></i>
-                            احسب المسافة والوقت
-                        </button>
-                        <div id="calcResult" class="mt-4 hidden">
-                            <div class="bg-black/30 rounded-xl p-4 border border-amber-500/20">
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div class="text-center">
-                                        <div class="text-amber-400 font-bold text-xl font-mono" id="resultDist">—</div>
-                                        <div class="text-zinc-500 text-xs mt-1">المسافة (متر)</div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-green-400 font-bold text-xl font-mono" id="resultTime">—</div>
-                                        <div class="text-zinc-500 text-xs mt-1">الوقت المتبقي (دقيقة)</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
-    </section>
-
-    <div class="section-divider"></div>
-
-    <!-- ==================== COMPARISON ==================== -->
-    <section class="py-24 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-16 animate-on-scroll">
-                <div class="section-badge mb-4">
-                    <i data-lucide="git-compare" class="w-4 h-4"></i>
-                    مقارنة
-                </div>
-                <h2 class="section-title">LoraTrak vs <span>الحلول التقليدية</span></h2>
-                <p class="text-zinc-400 text-lg mt-4 max-w-3xl mx-auto leading-relaxed">
-                    مقارنة شاملة بين نظامنا والحلول المتوفرة في السوق
-                </p>
+        <div class="calc-box fade-up d3">
+          <h3>🧮 جرب الحساب بنفسك</h3>
+          <div class="input-grid">
+            <div class="inp-wrap"><label>خط عرض الحافلة</label><input type="number" id="lat1" value="33.971590" step="0.000001"></div>
+            <div class="inp-wrap"><label>خط طول الحافلة</label><input type="number" id="lon1" value="-6.849813" step="0.000001"></div>
+            <div class="inp-wrap"><label>خط عرض المحطة</label><input type="number" id="lat2" value="33.975500" step="0.000001"></div>
+            <div class="inp-wrap"><label>خط طول المحطة</label><input type="number" id="lon2" value="-6.842000" step="0.000001"></div>
+          </div>
+          <div class="inp-wrap" style="margin-bottom:12px"><label>سرعة الحافلة (كم/ساعة)</label><input type="number" id="speed" value="40" step="1"></div>
+          <button class="btn-calc" onclick="calcHav()">▶ احسب المسافة والوقت</button>
+          <div class="calc-result" id="calcResult">
+            <div class="cr-grid">
+              <div><div class="cr-val" id="rDist" style="color:var(--blue-xl)">—</div><div class="cr-label">المسافة (متر)</div></div>
+              <div><div class="cr-val" id="rTime" style="color:#22c55e">—</div><div class="cr-label">الوقت المتبقي (دقيقة)</div></div>
             </div>
-
-            <div class="glass-card overflow-hidden animate-on-scroll delay-1">
-                <div class="overflow-x-auto">
-                    <table class="comparison-table">
-                        <thead>
-                            <tr>
-                                <th>المعيار</th>
-                                <th>LoraTrak</th>
-                                <th>GPS + 4G</th>
-                                <th>GPS + WiFi</th>
-                                <th>RFID</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="font-semibold text-white">يحتاج إنترنت</td>
-                                <td><span class="check-icon">✗ لا</span></td>
-                                <td><span class="cross-icon">✓ نعم</span></td>
-                                <td><span class="cross-icon">✓ نعم</span></td>
-                                <td><span class="check-icon">✗ لا</span></td>
-                            </tr>
-                            <tr>
-                                <td class="font-semibold text-white">تتبع لحظي</td>
-                                <td><span class="check-icon">✓</span></td>
-                                <td><span class="check-icon">✓</span></td>
-                                <td><span class="cross-icon">✗ محدود</span></td>
-                                <td><span class="cross-icon">✗ عند النقاط فقط</span></td>
-                            </tr>
-                            <tr>
-                                <td class="font-semibold text-white">مدى التغطية</td>
-                                <td class="text-amber-400 font-semibold">15+ كم</td>
-                                <td>حسب الشبكة</td>
-                                <td>50-100 م</td>
-                                <td>1-5 م</td>
-                            </tr>
-                            <tr>
-                                <td class="font-semibold text-white">استهلاك الطاقة</td>
-                                <td class="text-green-400 font-semibold">منخفض جداً</td>
-                                <td>مرتفع</td>
-                                <td>متوسط</td>
-                                <td>منخفض</td>
-                            </tr>
-                            <tr>
-                                <td class="font-semibold text-white">تكلفة التشغيل الشهرية</td>
-                                <td class="text-green-400 font-semibold">شبه معدومة</td>
-                                <td class="text-red-400 font-semibold">مرتفعة (SIM)</td>
-                                <td>متوسطة</td>
-                                <td>منخفضة</td>
-                            </tr>
-                            <tr>
-                                <td class="font-semibold text-white">حساب المسافة والوقت</td>
-                                <td><span class="check-icon">✓ تلقائي</span></td>
-                                <td><span class="check-icon">✓</span></td>
-                                <td><span class="cross-icon">✗</span></td>
-                                <td><span class="cross-icon">✗</span></td>
-                            </tr>
-                            <tr>
-                                <td class="font-semibold text-white">التسامح مع أعطال الشبكة</td>
-                                <td class="text-amber-400 font-semibold">عالي (Mesh)</td>
-                                <td class="text-red-400">منخفض</td>
-                                <td class="text-red-400">منخفض</td>
-                                <td>متوسط</td>
-                            </tr>
-                            <tr>
-                                <td class="font-semibold text-white">عرض على شاشة محلية</td>
-                                <td><span class="check-icon">✓ LCD</span></td>
-                                <td><span class="cross-icon">✗</span></td>
-                                <td><span class="cross-icon">✗</span></td>
-                                <td><span class="check-icon">✓</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+          </div>
         </div>
-    </section>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <div class="section-divider"></div>
+<div class="divider"></div>
 
-    <!-- ==================== LIVE DEMO ==================== -->
-    <section id="demo" class="py-24 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-16 animate-on-scroll">
-                <div class="section-badge mb-4">
-                    <span class="live-dot"></span>
-                    عرض حي
-                </div>
-                <h2 class="section-title">محاكاة <span>النظام</span></h2>
-                <p class="text-zinc-400 text-lg mt-4 max-w-3xl mx-auto leading-relaxed">
-                    شاهد كيف يعمل النظام في الوقت الحقيقي مع بيانات محاكاة واقعية
-                </p>
-            </div>
+<!-- COMPARISON -->
+<section>
+  <div class="section-inner">
+    <div class="section-head fade-up">
+      <div class="tag">⚖️ مقارنة</div>
+      <h2 class="st">LoraTrak vs <span>الحلول التقليدية</span></h2>
+      <p class="section-desc">مقارنة شاملة بين نظامنا والحلول المتوفرة في السوق</p>
+    </div>
+    <div class="card fade-up d1" style="overflow:hidden">
+      <div style="overflow-x:auto">
+        <table class="cmp-table">
+          <thead><tr><th>المعيار</th><th>LoraTrak ✦</th><th>GPS + 4G</th><th>GPS + WiFi</th><th>RFID</th></tr></thead>
+          <tbody>
+            <tr><td class="feat">يحتاج إنترنت</td><td><span class="yes">✗ لا</span></td><td><span class="no">✓ نعم</span></td><td><span class="no">✓ نعم</span></td><td><span class="yes">✗ لا</span></td></tr>
+            <tr><td class="feat">تتبع لحظي</td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="no">✗ محدود</span></td><td><span class="no">✗ نقاط فقط</span></td></tr>
+            <tr><td class="feat">مدى التغطية</td><td class="amber">15+ كم</td><td>حسب الشبكة</td><td>50-100 م</td><td>1-5 م</td></tr>
+            <tr><td class="feat">استهلاك الطاقة</td><td class="amber">منخفض جداً</td><td><span style="color:#ef4444">مرتفع</span></td><td>متوسط</td><td>منخفض</td></tr>
+            <tr><td class="feat">تكلفة التشغيل</td><td class="amber">شبه معدومة</td><td><span style="color:#ef4444">مرتفعة (SIM)</span></td><td>متوسطة</td><td>منخفضة</td></tr>
+            <tr><td class="feat">حساب المسافة/الوقت</td><td><span class="yes">✓ تلقائي</span></td><td><span class="yes">✓</span></td><td><span class="no">✗</span></td><td><span class="no">✗</span></td></tr>
+            <tr><td class="feat">تحمل الأعطال</td><td class="amber">عالي (Mesh)</td><td><span style="color:#ef4444">منخفض</span></td><td><span style="color:#ef4444">منخفض</span></td><td>متوسط</td></tr>
+            <tr><td class="feat">شاشة محلية LCD</td><td><span class="yes">✓</span></td><td><span class="no">✗</span></td><td><span class="no">✗</span></td><td><span class="yes">✓</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
 
-            <div class="grid md:grid-cols-2 gap-8">
-                <!-- Map -->
-                <div class="animate-on-scroll delay-1">
-                    <div class="map-container" id="mapContainer">
-                        <div class="map-grid"></div>
-                        <!-- Roads -->
-                        <div class="map-road" style="width: 80%; height: 3px; top: 35%; right: 10%;"></div>
-                        <div class="map-road" style="width: 3px; height: 60%; top: 20%; right: 45%;"></div>
-                        <div class="map-road" style="width: 60%; height: 3px; top: 60%; right: 25%;"></div>
-                        <div class="map-road" style="width: 3px; height: 40%; top: 35%; right: 70%;"></div>
+<div class="divider"></div>
 
-                        <!-- Stations -->
-                        <div class="map-station" style="top: 33%; right: 12%;" title="محطة محمد الخامس"></div>
-                        <div class="map-station-label" style="top: calc(33% + 14px); right: 6%;">محطة محمد الخامس</div>
-
-                        <div class="map-station" style="top: 58%; right: 25%;" title="محطة الحسن الثاني"></div>
-                        <div class="map-station-label" style="top: calc(58% + 14px); right: 18%;">محطة الحسن الثاني</div>
-
-                        <div class="map-station" style="top: 33%; right: 68%;" title="المحطة النهائية"></div>
-                        <div class="map-station-label" style="top: calc(33% + 14px); right: 62%;">المحطة النهائية</div>
-
-                        <!-- Bus -->
-                        <div class="map-bus" id="mapBus" style="top: 33%; right: 30%;">🚌</div>
-
-                        <!-- Info overlay -->
-                        <div class="absolute top-4 right-4 bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/10 z-10">
-                            <div class="flex items-center gap-2 text-xs">
-                                <span class="live-dot"></span>
-                                <span class="text-green-400 font-semibold">بث مباشر</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Data Panel -->
-                <div class="space-y-4 animate-on-scroll delay-2">
-                    <div class="glass-card p-0 overflow-hidden">
-                        <div class="px-5 py-3 border-b border-white/5 flex items-center justify-between">
-                            <h3 class="font-bold text-sm flex items-center gap-2">
-                                <i data-lucide="bus" class="w-4 h-4 text-amber-500"></i>
-                                بيانات الحافلة #01
-                            </h3>
-                            <span class="live-dot"></span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">الحالة</span>
-                            <span class="text-green-400 font-semibold text-sm flex items-center gap-1">
-                                <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                                متحركة
-                            </span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">خط العرض</span>
-                            <span class="data-value" id="demoLat">33.971590</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">خط الطول</span>
-                            <span class="data-value" id="demoLon">-6.849813</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">السرعة</span>
-                            <span class="data-value" id="demoSpeed">38.5 km/h</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">المسافة للمحطة</span>
-                            <span class="data-value text-amber-400" id="demoDist">1250 m</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">الوقت المتبقي</span>
-                            <span class="data-value text-green-400" id="demoETA">2 min</span>
-                        </div>
-                        <div class="data-row">
-                            <span class="data-label">آخر تحديث</span>
-                            <span class="data-value text-zinc-500" id="demoTime">--:--:--</span>
-                        </div>
-                    </div>
-
-                    <!-- Bus Route Progress -->
-                    <div class="glass-card p-5">
-                        <h3 class="font-bold text-sm mb-4 flex items-center gap-2">
-                            <i data-lucide="route" class="w-4 h-4 text-amber-500"></i>
-                            تقدم المسار
-                        </h3>
-                        <div class="bus-track mb-6">
-                            <div class="bus-track-fill" id="busTrackFill" style="width: 30%"></div>
-                            <div class="bus-icon-track" id="busIconTrack" style="right: 30%">🚌</div>
-                            <div class="station-dot" style="right: 0%"></div>
-                            <div class="station-dot" style="right: 50%"></div>
-                            <div class="station-dot" style="right: 100%"></div>
-                        </div>
-                        <div class="flex justify-between text-xs text-zinc-500">
-                            <span>نقطة الانطلاق</span>
-                            <span>محطة وسطى</span>
-                            <span>المحطة النهائية</span>
-                        </div>
-                    </div>
-
-                    <!-- Signal Strength -->
-                    <div class="glass-card p-5">
-                        <h3 class="font-bold text-sm mb-3 flex items-center gap-2">
-                            <i data-lucide="signal" class="w-4 h-4 text-amber-500"></i>
-                            قوة الإشارة
-                        </h3>
-                        <div class="flex items-end gap-1.5" id="signalBars">
-                            <div class="w-4 rounded-sm bg-green-500 transition-all" style="height: 8px;"></div>
-                            <div class="w-4 rounded-sm bg-green-500 transition-all" style="height: 16px;"></div>
-                            <div class="w-4 rounded-sm bg-green-500 transition-all" style="height: 24px;"></div>
-                            <div class="w-4 rounded-sm bg-amber-500 transition-all" style="height: 32px;"></div>
-                            <div class="w-4 rounded-sm bg-zinc-700 transition-all" style="height: 40px;"></div>
-                        </div>
-                        <div class="text-xs text-zinc-500 mt-2 font-mono" dir="ltr" id="signalRSSI">RSSI: -87 dBm | SNR: 8.5 dB</div>
-                    </div>
-                </div>
-            </div>
+<!-- LIVE DEMO -->
+<section id="demo">
+  <div class="section-inner">
+    <div class="section-head fade-up">
+      <div class="tag"><span class="status-dot"></span> عرض حي</div>
+      <h2 class="st">محاكاة <span>النظام</span></h2>
+      <p class="section-desc">شاهد كيف يعمل النظام في الوقت الحقيقي مع بيانات محاكاة واقعية</p>
+    </div>
+    <div class="demo-grid">
+      <div class="map-box fade-up d1">
+        <div class="map-bg-grid"></div>
+        <!-- Roads -->
+        <div class="map-road" style="width:78%;height:3px;top:38%;right:11%"></div>
+        <div class="map-road" style="width:3px;height:55%;top:22%;right:47%"></div>
+        <div class="map-road" style="width:55%;height:3px;top:62%;right:25%"></div>
+        <div class="map-road" style="width:3px;height:38%;top:38%;right:73%"></div>
+        <!-- Stations -->
+        <div class="map-station" style="top:36%;right:13%"></div>
+        <div class="map-station-label" style="top:calc(36% + 16px);right:7%">محطة الرئيسية</div>
+        <div class="map-station" style="top:60%;right:27%"></div>
+        <div class="map-station-label" style="top:calc(60% + 16px);right:20%">محطة الوسطى</div>
+        <div class="map-station" style="top:36%;right:71%"></div>
+        <div class="map-station-label" style="top:calc(36% + 16px);right:65%">المحطة النهائية</div>
+        <!-- Bus -->
+        <div class="map-bus" id="mapBus" style="top:35%;right:28%">🚌</div>
+        <div class="map-live-badge">
+          <span class="status-dot"></span>
+          <span style="color:#22c55e">بث مباشر</span>
         </div>
-    </section>
-
-    <div class="section-divider"></div>
-
-    <!-- ==================== USE CASES ==================== -->
-    <section class="py-24 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-16 animate-on-scroll">
-                <div class="section-badge mb-4">
-                    <i data-lucide="layout-grid" class="w-4 h-4"></i>
-                    مجالات الاستخدام
-                </div>
-                <h2 class="section-title">أين يمكن <span>تطبيقه</span>؟</h2>
-            </div>
-
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="glass-card p-6 animate-on-scroll delay-1">
-                    <div class="text-3xl mb-4">🏙️</div>
-                    <h3 class="font-bold mb-2">النقل الحضري</h3>
-                    <p class="text-zinc-400 text-sm leading-relaxed">
-                        تتبع حافلات النقل العمومي داخل المدن، خاصة في الأحياء التي تعاني من ضعف تغطية الهاتف.
-                    </p>
-                </div>
-                <div class="glass-card p-6 animate-on-scroll delay-2">
-                    <div class="text-3xl mb-4">🏫</div>
-                    <h3 class="font-bold mb-2">النقل المدرسي</h3>
-                    <p class="text-zinc-400 text-sm leading-relaxed">
-                        إعلام أولياء الأمور بمواقع حافلات نقل التلاميذ والوقت المتوقع للوصول.
-                    </p>
-                </div>
-                <div class="glass-card p-6 animate-on-scroll delay-3">
-                    <div class="text-3xl mb-4">🌾</div>
-                    <h3 class="font-bold mb-2">النقل الريفي</h3>
-                    <p class="text-zinc-400 text-sm leading-relaxed">
-                        الحل الأمثل للمناطق الريفية البعيدة حيث لا يوجد أي تغطية إنترنت أو شبكات هاتفية.
-                    </p>
-                </div>
-                <div class="glass-card p-6 animate-on-scroll delay-4">
-                    <div class="text-3xl mb-4">🏗️</div>
-                    <h3 class="font-bold mb-2">نقل العمال</h3>
-                    <p class="text-zinc-400 text-sm leading-relaxed">
-                        تتبع حافلات نقل العمال إلى مواقع البناء الكبيرة خارج المدن.
-                    </p>
-                </div>
-                <div class="glass-card p-6 animate-on-scroll delay-5">
-                    <div class="text-3xl mb-4">🏥</div>
-                    <h3 class="font-bold mb-2">النقل الطبي</h3>
-                    <p class="text-zinc-400 text-sm leading-relaxed">
-                        تتبع سيارات الإسعاف والحافلات الطبية في المناطق النائية لضمان سرعة الاستجابة.
-                    </p>
-                </div>
-                <div class="glass-card p-6 animate-on-scroll delay-6">
-                    <div class="text-3xl mb-4">🚌</div>
-                    <h3 class="font-bold mb-2">النقل بين المدن</h3>
-                    <p class="text-zinc-400 text-sm leading-relaxed">
-                        تتبع حافلات المسافات الطويلة عبر الطرق السريعة بين المدن مع إشعارات الوصول.
-                    </p>
-                </div>
-            </div>
+      </div>
+      <div class="data-panel fade-up d2">
+        <div class="dp-card">
+          <div class="dp-header">
+            <h3>🚌 بيانات الحافلة #01</h3>
+            <span class="status-dot"></span>
+          </div>
+          <div class="data-row"><span class="dr-label">الحالة</span><span class="dr-val green">● متحركة</span></div>
+          <div class="data-row"><span class="dr-label">خط العرض</span><span class="dr-val" id="demoLat">33.971590</span></div>
+          <div class="data-row"><span class="dr-label">خط الطول</span><span class="dr-val" id="demoLon">-6.849813</span></div>
+          <div class="data-row"><span class="dr-label">السرعة</span><span class="dr-val" id="demoSpeed">38.5 km/h</span></div>
+          <div class="data-row"><span class="dr-label">المسافة للمحطة</span><span class="dr-val cyan" id="demoDist">1250 m</span></div>
+          <div class="data-row"><span class="dr-label">الوقت المتبقي</span><span class="dr-val green" id="demoETA">2 min</span></div>
+          <div class="data-row"><span class="dr-label">آخر تحديث</span><span class="dr-val" id="demoTime" style="color:#3d6494">--:--:--</span></div>
         </div>
-    </section>
-
-    <div class="section-divider"></div>
-
-    <!-- ==================== ARCHITECTURE ==================== -->
-    <section class="py-24 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="text-center mb-16 animate-on-scroll">
-                <div class="section-badge mb-4">
-                    <i data-lucide="layers" class="w-4 h-4"></i>
-                    البنية التقنية
-                </div>
-                <h2 class="section-title">البنية <span>البرمجية</span></h2>
-            </div>
-
-            <div class="grid md:grid-cols-3 gap-6">
-                <!-- Hardware Layer -->
-                <div class="glass-card p-6 animate-on-scroll delay-1 border-t-2 border-t-amber-500/50">
-                    <div class="text-xs text-amber-400 font-bold uppercase tracking-wider mb-3">طبقة العتاد</div>
-                    <div class="space-y-3">
-                        <div class="flex items-center gap-3 p-3 bg-black/20 rounded-lg">
-                            <i data-lucide="cpu" class="w-5 h-5 text-amber-500 flex-shrink-0"></i>
-                            <div>
-                                <div class="text-sm font-semibold">ESP32 / Arduino</div>
-                                <div class="text-xs text-zinc-500">المتحكم الدقيق</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 p-3 bg-black/20 rounded-lg">
-                            <i data-lucide="satellite" class="w-5 h-5 text-blue-400 flex-shrink-0"></i>
-                            <div>
-                                <div class="text-sm font-semibold">Neo-6M GPS</div>
-                                <div class="text-xs text-zinc-500">وحدة تحديد المواقع</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 p-3 bg-black/20 rounded-lg">
-                            <i data-lucide="radio" class="w-5 h-5 text-purple-400 flex-shrink-0"></i>
-                            <div>
-                                <div class="text-sm font-semibold">SX1276 LoRa</div>
-                                <div class="text-xs text-zinc-500">مودم الاتصال اللاسلكي</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 p-3 bg-black/20 rounded-lg">
-                            <i data-lucide="tv" class="w-5 h-5 text-cyan-400 flex-shrink-0"></i>
-                            <div>
-                                <div class="text-sm font-semibold">LCD 20x4</div>
-                                <div class="text-xs text-zinc-500">شاشة العرض</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Communication Layer -->
-                <div class="glass-card p-6 animate-on-scroll delay-2 border-t-2 border-t-green-500/50">
-                    <div class="text-xs text-green-400 font-bold uppercase tracking-wider mb-3">طبقة الاتصال</div>
-                    <div class="space-y-3">
-                        <div class="flex items-center gap-3 p-3 bg-black/20 rounded-lg">
-                            <i data-lucide="waves" class="w-5 h-5 text-green-500 flex-shrink-0"></i>
-                            <div>
-                                <div class="text-sm font-semibold">LoRa PHY</div>
-                                <div class="text-xs text-zinc-500">الطبقة الفيزيائية 433MHz</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 p-3 bg-black/20 rounded-lg">
-                            <i data-lucide="network" class="w-5 h-5 text-green-400 flex-shrink-0"></i>
-                            <div>
-                                <div class="text-sm font-semibold">Mesh Protocol</div>
-                                <div class="text-xs text-zinc-500">بروتوكول التوجيه الذكي</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 p-3 bg-black/20 rounded-lg">
-                            <i data-lucide="lock" class="w-5 h-5 text-green-300 flex-shrink-0"></i>
-                            <div>
-                                <div class="text-sm font-semibold">AES-128</div>
-                                <div class="text-xs text-zinc-500">تشفير البيانات</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 p-3 bg-black/20 rounded-lg">
-                            <i data-lucide="check-circle" class="w-5 h-5 text-green-200 flex-shrink-0"></i>
-                            <div>
-                                <div class="text-sm font-semibold">CRC Checksum</div>
-                                <div class="text-xs text-zinc-500">التحقق من سلامة البيانات</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Application Layer -->
-                <div class="glass-card p-6 animate-on-scroll delay-3 border-t-2 border-t-blue-500/50">
-                    <div class="text-xs text-blue-400 font-bold uppercase tracking-wider mb-3">طبقة التطبيق</div>
-                    <div class="space-y-3">
-                        <div class="flex items-center gap-3 p-3 bg-black/20 rounded-lg">
-                            <i data-lucide="code" class="w-5 h-5 text-blue-500 flex-shrink-0"></i>
-                            <div>
-                                <div class="text-sm font-semibold">C++ / Arduino</div>
-                                <div class="text-xs text-zinc-500">برمجة العتاد</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 p-3 bg-black/20 rounded-lg">
-                            <i data-lucide="globe" class="w-5 h-5 text-blue-400 flex-shrink-0"></i>
-                            <div>
-                                <div class="text-sm font-semibold">HTML/CSS/JS</div>
-                                <div class="text-xs text-zinc-500">واجهة الويب</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 p-3 bg-black/20 rounded-lg">
-                            <i data-lucide="server" class="w-5 h-5 text-blue-300 flex-shrink-0"></i>
-                            <div>
-                                <div class="text-sm font-semibold">PHP / MySQL</div>
-                                <div class="text-xs text-zinc-500">الخادم وقاعدة البيانات</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 p-3 bg-black/20 rounded-lg">
-                            <i data-lucide="map" class="w-5 h-5 text-blue-200 flex-shrink-0"></i>
-                            <div>
-                                <div class="text-sm font-semibold">Leaflet.js</div>
-                                <div class="text-xs text-zinc-500">الخريطة التفاعلية</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="route-card card">
+          <h3>🗺️ تقدم المسار</h3>
+          <div class="bus-track">
+            <div class="bt-fill" id="btFill" style="width:30%"></div>
+            <div class="bt-bus" id="btBus" style="right:28%">🚌</div>
+            <div class="bt-stop" style="right:0%;transform:translateX(50%)"></div>
+            <div class="bt-stop" style="right:50%;transform:translateX(50%)"></div>
+            <div class="bt-stop" style="right:calc(100% - 7px)"></div>
+          </div>
+          <div class="route-labels"><span>الانطلاق</span><span>محطة وسطى</span><span>النهاية</span></div>
         </div>
-    </section>
-
-    <div class="section-divider"></div>
-
-    <!-- ==================== FAQ ==================== -->
-    <section id="faq" class="py-24 px-6">
-        <div class="max-w-4xl mx-auto">
-            <div class="text-center mb-16 animate-on-scroll">
-                <div class="section-badge mb-4">
-                    <i data-lucide="help-circle" class="w-4 h-4"></i>
-                    إجابات
-                </div>
-                <h2 class="section-title">الأسئلة <span>الشائعة</span></h2>
-            </div>
-
-            <div class="space-y-3" id="faqContainer">
-                <div class="faq-item animate-on-scroll delay-1">
-                    <div class="faq-header" onclick="toggleFaq(this)">
-                        <h4>هل يحتاج النظام إلى اتصال إنترنت؟</h4>
-                        <div class="faq-icon">
-                            <i data-lucide="plus" class="w-4 h-4 text-amber-500"></i>
-                        </div>
-                    </div>
-                    <div class="faq-body">
-                        <div class="faq-body-inner">
-                            لا، النظام يعمل بشكل كامل بدون إنترنت. الاتصال بين الحافلات والمحطات يتم عبر LoRa ولا يحتاج لأي بنية تحتية للإنترنت. واجهة الويب هي اختيارية وتعمل فقط عند توفر Wi-Fi أو Ethernet في المحطة.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="faq-item animate-on-scroll delay-2">
-                    <div class="faq-header" onclick="toggleFaq(this)">
-                        <h4>ما هو أقصى مدى للاتصال؟</h4>
-                        <div class="faq-icon">
-                            <i data-lucide="plus" class="w-4 h-4 text-amber-500"></i>
-                        </div>
-                    </div>
-                    <div class="faq-body">
-                        <div class="faq-body-inner">
-                            مدى الاتصال المباشر بين عقدتين يصل إلى 15 كم في الأماكن المفتوحة (بدون عوائق). في المناطق الحضرية ينخفض إلى 2-5 كم. لكن مع شبكة Mesh، يمكن تغطية مسافات أطول بكثير عبر تمرير البيانات عبر العقد الوسيطة.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="faq-item animate-on-scroll delay-3">
-                    <div class="faq-header" onclick="toggleFaq(this)">
-                        <h4>كم عدد الحافلات التي يمكن تتبعها؟</h4>
-                        <div class="faq-icon">
-                            <i data-lucide="plus" class="w-4 h-4 text-amber-500"></i>
-                        </div>
-                    </div>
-                    <div class="faq-body">
-                        <div class="faq-body-inner">
-                            نظراً لأن كل حافلة ترسل بياناتها كل 5 ثوانٍ وهي صغيرة جداً (حوالي 30 بايت)، يمكن لشبكة واحدة دعم عشرات الحافلات. مع إدارة القنوات (Channel Management) يمكن الوصول إلى أكثر من 100 حافلة في نفس المنطقة.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="faq-item animate-on-scroll delay-4">
-                    <div class="faq-header" onclick="toggleFaq(this)">
-                        <h4>ما هي تكلفة تصنيع عقدة واحدة؟</h4>
-                        <div class="faq-icon">
-                            <i data-lucide="plus" class="w-4 h-4 text-amber-500"></i>
-                        </div>
-                    </div>
-                    <div class="faq-body">
-                        <div class="faq-body-inner">
-                            تكلفة مكونات عقدة الحافلة تتراوح بين 15-25 دولار أمريكي، وتشمل: ESP32 (~$4)، وحدة LoRa SX1276 (~$5)، وحدة GPS Neo-6M (~$4)، بطارية Li-Po (~$3)، والعلبة والموصلات. محطة الاستقبال مع الشاشة تكلف حوالي 35-45 دولار.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="faq-item animate-on-scroll delay-5">
-                    <div class="faq-header" onclick="toggleFaq(this)">
-                        <h4>كيف يتم تزويد الأجهزة بالطاقة؟</h4>
-                        <div class="faq-icon">
-                            <i data-lucide="plus" class="w-4 h-4 text-amber-500"></i>
-                        </div>
-                    </div>
-                    <div class="faq-body">
-                        <div class="faq-body-inner">
-                            عقدة الحافلة تعمل ببطارية ليثيوم بوليمر قابلة لإعادة الشحن (2000mAh) تدوم 72 ساعة. يمكن أيضاً تشغيلها مباشرة من كهرباء الحافلة (12V/24V). محطة الاستقبال يمكن تشغيلها بالطاقة الشمسية أو من الشبكة الكهربائية.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="faq-item animate-on-scroll delay-6">
-                    <div class="faq-header" onclick="toggleFaq(this)">
-                        <h4>هل البيانات مشفرة وآمنة؟</h4>
-                        <div class="faq-icon">
-                            <i data-lucide="plus" class="w-4 h-4 text-amber-500"></i>
-                        </div>
-                    </div>
-                    <div class="faq-body">
-                        <div class="faq-body-inner">
-                            نعم، يتم تشفير جميع البيانات المرسلة باستخدام خوارزمية AES-128 قبل الإرسال. بالإضافة إلى ذلك، كل حزمة تحتوي على رقم تسلسلي وCRC Checksum للتحقق من سلامتها. معرف الشبكة (Network ID) يمنع التدخل من أجهزة خارجية.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="faq-item animate-on-scroll delay-6">
-                    <div class="faq-header" onclick="toggleFaq(this)">
-                        <h4>هل يمكن استخدامه لتتبع أشياء أخرى غير الحافلات؟</h4>
-                        <div class="faq-icon">
-                            <i data-lucide="plus" class="w-4 h-4 text-amber-500"></i>
-                        </div>
-                    </div>
-                    <div class="faq-body">
-                        <div class="faq-body-inner">
-                            بالتأكيد! النظام مصمم ليكون مرناً. يمكن استخدامه لتتبع الشاحنات، السيارات، الدراجات، أو حتى الأصول الثمينة. يمكن تكييف خوارزميات الحساب حسب حالة الاستخدام، مثل إضافة إنذارات عند مغادرة منطقة جغرافية محددة (Geofencing).
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="signal-card card">
+          <h3>📶 قوة الإشارة LoRa</h3>
+          <div class="sig-bars" id="sigBars">
+            <div class="sig-bar" style="height:8px;background:#22c55e;border-radius:2px"></div>
+            <div class="sig-bar" style="height:16px;background:#22c55e;border-radius:2px"></div>
+            <div class="sig-bar" style="height:24px;background:#22c55e;border-radius:2px"></div>
+            <div class="sig-bar" style="height:32px;background:var(--blue-xl);border-radius:2px"></div>
+            <div class="sig-bar" style="height:40px;background:#1e3a6e;border-radius:2px"></div>
+          </div>
+          <div class="sig-rssi" id="sigRSSI">RSSI: -87 dBm | SNR: 8.5 dB</div>
         </div>
-    </section>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <div class="section-divider"></div>
+<div class="divider"></div>
 
-    <!-- ==================== CTA ==================== -->
-    <section class="py-24 px-6">
-        <div class="max-w-4xl mx-auto">
-            <div class="glass-card p-10 md:p-16 text-center relative overflow-hidden animate-on-scroll">
-                <!-- Background Glow -->
-                <div class="absolute inset-0 opacity-30">
-                    <div class="absolute w-96 h-96 rounded-full bg-amber-500/10 blur-[100px] -top-48 -right-48"></div>
-                    <div class="absolute w-96 h-96 rounded-full bg-amber-500/10 blur-[100px] -bottom-48 -left-48"></div>
-                </div>
+<!-- USE CASES -->
+<section>
+  <div class="section-inner">
+    <div class="section-head fade-up">
+      <div class="tag">🗂️ مجالات الاستخدام</div>
+      <h2 class="st">أين يمكن <span>تطبيقه</span>؟</h2>
+    </div>
+    <div class="uc-grid">
+      <div class="card uc-card fade-up d1"><div class="uc-icon">🏙️</div><h3>النقل الحضري</h3><p>تتبع حافلات النقل العمومي داخل المدن، خاصة في الأحياء التي تعاني من ضعف تغطية الهاتف.</p></div>
+      <div class="card uc-card fade-up d2"><div class="uc-icon">🏫</div><h3>النقل المدرسي</h3><p>إعلام أولياء الأمور بمواقع حافلات نقل التلاميذ والوقت المتوقع للوصول.</p></div>
+      <div class="card uc-card fade-up d3"><div class="uc-icon">🌾</div><h3>النقل الريفي</h3><p>الحل الأمثل للمناطق الريفية البعيدة حيث لا يوجد أي تغطية إنترنت أو شبكات هاتفية.</p></div>
+      <div class="card uc-card fade-up d4"><div class="uc-icon">🏗️</div><h3>نقل العمال</h3><p>تتبع حافلات نقل العمال إلى مواقع البناء الكبيرة خارج المدن.</p></div>
+      <div class="card uc-card fade-up d5"><div class="uc-icon">🏥</div><h3>النقل الطبي</h3><p>تتبع سيارات الإسعاف والحافلات الطبية في المناطق النائية لضمان سرعة الاستجابة.</p></div>
+      <div class="card uc-card fade-up d6"><div class="uc-icon">🚌</div><h3>النقل بين المدن</h3><p>تتبع حافلات المسافات الطويلة عبر الطرق السريعة بين المدن مع إشعارات الوصول.</p></div>
+    </div>
+  </div>
+</section>
 
-                <div class="relative z-10">
-                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center mx-auto mb-6">
-                        <i data-lucide="rocket" class="w-8 h-8 text-black"></i>
-                    </div>
-                    <h2 class="section-title mb-4">هل تريد <span>تنفيذ المشروع</span>؟</h2>
-                    <p class="text-zinc-400 text-lg max-w-2xl mx-auto leading-relaxed mb-8">
-                        تواصل معنا الآن لمناقشة تفاصيل المشروع، التسعير، وخطط التنفيذ. فريق Safarimakers جاهز لمساعدتك في كل خطوة.
-                    </p>
-                    <div class="flex flex-wrap items-center justify-center gap-4">
-                        <a href="https://wa.me/212698078610" target="_blank"
-                           class="cta-button cta-button-amber text-base px-8 py-4"
-                           style="text-decoration:none">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                            تواصل عبر واتساب
-                        </a>
-                        <a href="https://wa.me/212698078610?text=مرحبا، أرغب في معرفة المزيد عن مشروع LoraTrak" target="_blank"
-                           class="cta-button cta-button-outline text-base px-8 py-4"
-                           style="text-decoration:none">
-                            <i data-lucide="message-circle" class="w-5 h-5"></i>
-                            أرسل رسالة جاهزة
-                        </a>
-                    </div>
-                    <p class="text-zinc-600 text-sm mt-6">
-                        الرد خلال ساعة واحدة في أيام العمل
-                    </p>
-                </div>
-            </div>
+<div class="divider"></div>
+
+<!-- ARCHITECTURE -->
+<section>
+  <div class="section-inner">
+    <div class="section-head fade-up">
+      <div class="tag">🏗️ البنية التقنية</div>
+      <h2 class="st">البنية <span>البرمجية</span></h2>
+    </div>
+    <div class="arch-grid">
+      <div class="card arch-card fade-up d1">
+        <div class="arch-label hw">طبقة العتاد — Hardware</div>
+        <div class="arch-item"><div class="ai-icon">💻</div><div><div class="ai-name">ESP32 / Arduino</div><div class="ai-sub">المتحكم الدقيق</div></div></div>
+        <div class="arch-item"><div class="ai-icon">🛰️</div><div><div class="ai-name">Neo-6M GPS</div><div class="ai-sub">وحدة تحديد المواقع</div></div></div>
+        <div class="arch-item"><div class="ai-icon">📻</div><div><div class="ai-name">SX1276 LoRa</div><div class="ai-sub">مودم الاتصال اللاسلكي</div></div></div>
+        <div class="arch-item"><div class="ai-icon">🖥️</div><div><div class="ai-name">LCD 20×4</div><div class="ai-sub">شاشة العرض</div></div></div>
+      </div>
+      <div class="card arch-card fade-up d2">
+        <div class="arch-label comm">طبقة الاتصال — Communication</div>
+        <div class="arch-item"><div class="ai-icon">〰️</div><div><div class="ai-name">LoRa PHY</div><div class="ai-sub">الطبقة الفيزيائية 433MHz</div></div></div>
+        <div class="arch-item"><div class="ai-icon">🔗</div><div><div class="ai-name">Mesh Protocol</div><div class="ai-sub">بروتوكول التوجيه الذكي</div></div></div>
+        <div class="arch-item"><div class="ai-icon">🔐</div><div><div class="ai-name">AES-128</div><div class="ai-sub">تشفير البيانات</div></div></div>
+        <div class="arch-item"><div class="ai-icon">✅</div><div><div class="ai-name">CRC Checksum</div><div class="ai-sub">التحقق من سلامة البيانات</div></div></div>
+      </div>
+      <div class="card arch-card fade-up d3">
+        <div class="arch-label app">طبقة التطبيق — Application</div>
+        <div class="arch-item"><div class="ai-icon">⌨️</div><div><div class="ai-name">C++ / Arduino</div><div class="ai-sub">برمجة العتاد</div></div></div>
+        <div class="arch-item"><div class="ai-icon">🌐</div><div><div class="ai-name">HTML/CSS/JS</div><div class="ai-sub">واجهة الويب</div></div></div>
+        <div class="arch-item"><div class="ai-icon">🗄️</div><div><div class="ai-name">PHP / MySQL</div><div class="ai-sub">الخادم وقاعدة البيانات</div></div></div>
+        <div class="arch-item"><div class="ai-icon">🗺️</div><div><div class="ai-name">Leaflet.js</div><div class="ai-sub">الخريطة التفاعلية</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="section-inner">
+    <div class="section-head fade-up">
+      <div class="tag">❓ إجابات</div>
+      <h2 class="st">الأسئلة <span>الشائعة</span></h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item fade-up d1">
+        <div class="faq-q" onclick="toggleFaq(this)"><h4>هل يحتاج النظام إلى اتصال إنترنت؟</h4><div class="faq-icon">+</div></div>
+        <div class="faq-ans"><div class="faq-ans-inner">لا، النظام يعمل بشكل كامل بدون إنترنت. الاتصال بين الحافلات والمحطات يتم عبر LoRa. واجهة الويب اختيارية وتعمل فقط عند توفر Wi-Fi أو Ethernet في المحطة.</div></div>
+      </div>
+      <div class="faq-item fade-up d2">
+        <div class="faq-q" onclick="toggleFaq(this)"><h4>ما هو أقصى مدى للاتصال؟</h4><div class="faq-icon">+</div></div>
+        <div class="faq-ans"><div class="faq-ans-inner">مدى الاتصال المباشر يصل إلى 15 كم في الأماكن المفتوحة. في المناطق الحضرية ينخفض إلى 2-5 كم. مع شبكة Mesh، يمكن تغطية مسافات أطول بكثير عبر العقد الوسيطة.</div></div>
+      </div>
+      <div class="faq-item fade-up d3">
+        <div class="faq-q" onclick="toggleFaq(this)"><h4>كم عدد الحافلات التي يمكن تتبعها؟</h4><div class="faq-icon">+</div></div>
+        <div class="faq-ans"><div class="faq-ans-inner">نظراً لأن كل حافلة ترسل بياناتها كل 5 ثوانٍ وحجمها صغير جداً (~30 بايت)، يمكن دعم عشرات الحافلات. مع Channel Management يمكن الوصول إلى أكثر من 100 حافلة في نفس المنطقة.</div></div>
+      </div>
+      <div class="faq-item fade-up d4">
+        <div class="faq-q" onclick="toggleFaq(this)"><h4>ما هي تكلفة تصنيع عقدة واحدة؟</h4><div class="faq-icon">+</div></div>
+        <div class="faq-ans"><div class="faq-ans-inner">تكلفة مكونات عقدة الحافلة تتراوح بين 15-25 دولار: ESP32 (~$4)، LoRa SX1276 (~$5)، GPS Neo-6M (~$4)، بطارية Li-Po (~$3)، العلبة والموصلات. محطة الاستقبال مع الشاشة تكلف ~35-45 دولار.</div></div>
+      </div>
+      <div class="faq-item fade-up d5">
+        <div class="faq-q" onclick="toggleFaq(this)"><h4>كيف يتم تزويد الأجهزة بالطاقة؟</h4><div class="faq-icon">+</div></div>
+        <div class="faq-ans"><div class="faq-ans-inner">عقدة الحافلة تعمل ببطارية ليثيوم (2000mAh) تدوم 72 ساعة، أو من كهرباء الحافلة (12V/24V). محطة الاستقبال تعمل بالطاقة الشمسية أو من الشبكة الكهربائية.</div></div>
+      </div>
+      <div class="faq-item fade-up d6">
+        <div class="faq-q" onclick="toggleFaq(this)"><h4>هل البيانات مشفرة وآمنة؟</h4><div class="faq-icon">+</div></div>
+        <div class="faq-ans"><div class="faq-ans-inner">نعم، يتم تشفير جميع البيانات باستخدام AES-128 قبل الإرسال. كل حزمة تحتوي على رقم تسلسلي وCRC Checksum. Network ID يمنع التدخل من أجهزة خارجية.</div></div>
+      </div>
+      <div class="faq-item fade-up d6">
+        <div class="faq-q" onclick="toggleFaq(this)"><h4>هل يمكن استخدامه لتتبع أشياء أخرى؟</h4><div class="faq-icon">+</div></div>
+        <div class="faq-ans"><div class="faq-ans-inner">بالتأكيد! النظام مصمم ليكون مرناً. يمكن استخدامه لتتبع الشاحنات، السيارات، أو الأصول الثمينة. يمكن إضافة Geofencing وإنذارات عند مغادرة منطقة جغرافية محددة.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CTA -->
+<section>
+  <div class="section-inner" style="max-width:860px">
+    <div class="cta-box card fade-up">
+      <div class="cta-glow cta-glow-1"></div>
+      <div class="cta-glow cta-glow-2"></div>
+      <div style="position:relative;z-index:1">
+        <div class="cta-icon">🚀</div>
+        <h2 class="st" style="text-align:center;margin-bottom:14px">هل تريد <span>تنفيذ المشروع</span>؟</h2>
+        <p style="color:var(--muted);font-size:16px;max-width:540px;margin:0 auto 36px;line-height:1.8;text-align:center">تواصل معنا الآن لمناقشة تفاصيل المشروع، التسعير، وخطط التنفيذ. فريق Safarimakers جاهز لمساعدتك في كل خطوة.</p>
+        <div class="cta-btns">
+          <a href="https://wa.me/212698078610" target="_blank" class="btn-primary" style="font-size:15px;padding:14px 32px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            تواصل عبر واتساب
+          </a>
+          <a href="https://wa.me/212698078610?text=مرحبا، أرغب في معرفة المزيد عن مشروع LoraTrak" target="_blank" class="btn-outline" style="font-size:15px;padding:14px 32px">
+            💬 أرسل رسالة جاهزة
+          </a>
         </div>
-    </section>
+        <p class="cta-note">الرد خلال ساعة واحدة في أيام العمل</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <!-- ==================== FOOTER ==================== -->
-    <footer class="border-t border-white/5 py-16 px-6">
-        <div class="max-w-6xl mx-auto">
-            <div class="grid md:grid-cols-4 gap-10 mb-12">
-                <!-- Brand -->
-                <div class="md:col-span-2">
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
-                            <i data-lucide="radio" class="w-5 h-5 text-black"></i>
-                        </div>
-                        <span class="text-white font-bold text-lg">LoraTrak</span>
-                    </div>
-                    <p class="text-zinc-500 text-sm leading-relaxed max-w-md mb-6">
-                        نظام ذكي ومتطور لتتبع الحافلات في الوقت الحقيقي باستخدام تقنيات LoRa و Mesh Network. تطوير فريق Safarimakers ضمن Safari Institute.
-                    </p>
-                    <div class="flex items-center gap-4">
-                        <a href="https://wa.me/212698078610" target="_blank"
-                           class="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-green-400 hover:border-green-500/30 transition-all"
-                           style="text-decoration:none">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.7
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#hero" class="logo" style="margin-bottom:4px;display:inline-flex">
+          <div class="logo-icon">📡</div>
+          <div class="logo-text" style="margin-right:10px">Lora<span>Trak</span></div>
+        </a>
+        <p>نظام ذكي لتتبع الحافلات في الوقت الحقيقي باستخدام LoRa و Mesh Network. تطوير فريق Safarimakers ضمن Safari Institute.</p>
+      </div>
+      <div class="footer-col">
+        <h4>الأقسام</h4>
+        <ul>
+          <li><a href="#about">عن المشروع</a></li>
+          <li><a href="#components">المكونات</a></li>
+          <li><a href="#how-it-works">طريقة العمل</a></li>
+          <li><a href="#mesh">Mesh Network</a></li>
+          <li><a href="#haversine">معادلة Haversine</a></li>
+          <li><a href="#demo">عرض حي</a></li>
+          <li><a href="#faq">الأسئلة الشائعة</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>التواصل</h4>
+        <ul>
+          <li><a href="https://wa.me/212698078610" target="_blank">واتساب</a></li>
+          <li><a href="https://wa.me/212698078610?text=مرحبا، أرغب في معرفة المزيد عن مشروع LoraTrak" target="_blank">طلب عرض سعر</a></li>
+          <li><a href="#faq">الأسئلة الشائعة</a></li>
+        </ul>
+        <div style="margin-top:20px">
+          <h4>التقنيات</h4>
+          <ul>
+            <li><a href="#">LoRa SX1276</a></li>
+            <li><a href="#">GPS Neo-6M</a></li>
+            <li><a href="#">ESP32</a></li>
+            <li><a href="#">Mesh Network</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2025 LoraTrak — Safarimakers | Safari Institute</span>
+      <span>صُنع بـ ❤️ في المغرب 🇲🇦</span>
+    </div>
+  </div>
+</footer>
+
+<!-- WHATSAPP FLOAT -->
+<a href="https://wa.me/212698078610" target="_blank" class="wa-float">
+  <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  <div class="wa-tip">تواصل معنا الآن</div>
+</a>
+
+<script>
+// ── HELPERS ──────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── NAV SCROLL ────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// ── MOBILE MENU ───────────────────────────────────────────
+function toggleMobile() {
+  const h = document.getElementById('hamburger');
+  const m = document.getElementById('mobileMenu');
+  h.classList.toggle('open');
+  m.classList.toggle('open');
+}
+
+// ── SCROLL ANIMATIONS ─────────────────────────────────────
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('in'); });
+}, { threshold: 0.12 });
+document.querySelectorAll('.fade-up').forEach(el => io.observe(el));
+
+// ── STAT COUNTER ──────────────────────────────────────────
+const statIo = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    const el = e.target.querySelector('[data-target]');
+    if (!el) return;
+    const target = +el.dataset.target;
+    let cur = 0;
+    const step = target / 60;
+    const timer = setInterval(() => {
+      cur = Math.min(cur + step, target);
+      el.textContent = Math.round(cur);
+      if (cur >= target) clearInterval(timer);
+    }, 16);
+    statIo.unobserve(e.target);
+  });
+}, { threshold: 0.5 });
+document.querySelectorAll('.stat-card').forEach(c => statIo.observe(c));
+
+// ── PROGRESS BARS ─────────────────────────────────────────
+const barIo = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.querySelectorAll('.pbar-fill').forEach(b => {
+      const p = b.style.getPropertyValue('--p') || '0%';
+      setTimeout(() => b.style.width = p, 100);
+    });
+    barIo.unobserve(e.target);
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.perf-card').forEach(c => barIo.observe(c));
+
+// ── FAQ ────────────────────────────────────────────────────
+function toggleFaq(header) {
+  const item = header.closest('.faq-item');
+  const wasOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+  if (!wasOpen) item.classList.add('open');
+}
+
+// ── HAVERSINE CALCULATOR ──────────────────────────────────
+function toRad(d) { return d * Math.PI / 180; }
+function calcHav() {
+  const lat1 = +document.getElementById('lat1').value;
+  const lon1 = +document.getElementById('lon1').value;
+  const lat2 = +document.getElementById('lat2').value;
+  const lon2 = +document.getElementById('lon2').value;
+  const spd  = +document.getElementById('speed').value;
+
+  const R = 6371000;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const eta  = spd > 0 ? (dist/1000/spd*60) : 0;
+
+  document.getElementById('rDist').textContent = dist.toFixed(1);
+  document.getElementById('rTime').textContent = eta.toFixed(1);
+  const res = document.getElementById('calcResult');
+  res.style.display = 'block';
+  showToast('✓ تم حساب المسافة والوقت');
+}
+
+// ── MESH CANVAS ───────────────────────────────────────────
+(function initMesh() {
+  const canvas = document.getElementById('meshCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  function resize() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const nodes = [
+    { x:0.12, y:0.30, type:'bus',  label:'حافلة #01' },
+    { x:0.38, y:0.55, type:'relay',label:'عقدة 2' },
+    { x:0.60, y:0.25, type:'relay',label:'عقدة 3' },
+    { x:0.65, y:0.65, type:'relay',label:'عقدة 4' },
+    { x:0.88, y:0.45, type:'station',label:'المحطة' },
+  ];
+  const edges = [[0,1],[0,2],[1,2],[1,3],[2,4],[3,4],[1,4]];
+  let t = 0;
+  let packet = { edge:0, progress:0 };
+
+  function draw() {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    t += 0.008;
+
+    // edges
+    edges.forEach(([a,b]) => {
+      const na = nodes[a], nb = nodes[b];
+      ctx.beginPath();
+      ctx.moveTo(na.x*W, na.y*H);
+      ctx.lineTo(nb.x*W, nb.y*H);
+      ctx.strokeStyle = 'rgba(37,99,235,0.18)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+
+    // animated packet
+    packet.progress += 0.008;
+    if (packet.progress >= 1) {
+      packet.edge = (packet.edge + 1) % edges.length;
+      packet.progress = 0;
+    }
+    const [pa, pb] = edges[packet.edge];
+    const px = (nodes[pa].x + (nodes[pb].x - nodes[pa].x) * packet.progress) * W;
+    const py = (nodes[pa].y + (nodes[pb].y - nodes[pa].y) * packet.progress) * H;
+    ctx.beginPath();
+    ctx.arc(px, py, 4, 0, Math.PI*2);
+    ctx.fillStyle = '#22d3ee';
+    ctx.shadowBlur = 12;
+    ctx.shadowColor = '#22d3ee';
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // nodes
+    nodes.forEach((n, i) => {
+      const x = n.x * W, y = n.y * H;
+      const isStation = n.type === 'station';
+      const isBus = n.type === 'bus';
+      const r = isStation ? 20 : 16;
+
+      // pulse for bus
+      if (isBus) {
+        const pulse = 0.5 + 0.5*Math.sin(t*3);
+        ctx.beginPath();
+        ctx.arc(x, y, r + 8 + pulse*6, 0, Math.PI*2);
+        ctx.strokeStyle = `rgba(37,99,235,${0.15 + pulse*0.1})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI*2);
+      ctx.fillStyle = isStation ? 'rgba(34,197,94,0.15)' : 'rgba(37,99,235,0.15)';
+      ctx.fill();
+      ctx.strokeStyle = isStation ? '#22c55e' : '#3b82f6';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.font = `${isStation?14:12}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(isBus ? '🚌' : isStation ? '🏢' : '📻', x, y);
+
+      ctx.font = '9px IBM Plex Sans Arabic, sans-serif';
+      ctx.fillStyle = '#3d6494';
+      ctx.fillText(n.label, x, y + r + 10);
+    });
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── LIVE DEMO SIMULATION ──────────────────────────────────
+(function initDemo() {
+  let progress = 0.3;
+  const busEl = document.getElementById('mapBus');
+  const btFill = document.getElementById('btFill');
+  const btBus  = document.getElementById('btBus');
+
+  function lerp(a,b,t){ return a+(b-a)*t; }
+
+  const busPath = [
+    {top:35, right:28}, {top:36,right:35}, {top:37,right:42},
+    {top:36,right:50},{top:35,right:58},{top:35,right:65},{top:36,right:71}
+  ];
+  let pathIdx = 0;
+
+  setInterval(() => {
+    pathIdx = (pathIdx + 1) % busPath.length;
+    const p = busPath[pathIdx];
+    busEl.style.top = p.top + '%';
+    busEl.style.right = p.right + '%';
+
+    progress = pathIdx / (busPath.length - 1);
+    const pct = (progress*100).toFixed(0);
+    btFill.style.width = pct + '%';
+    btBus.style.right = `calc(${pct}% - 11px)`;
+
+    const dist = Math.round(1500 - progress*1200);
+    const spd = (35 + Math.random()*10).toFixed(1);
+    const eta = Math.max(1, Math.round(dist/1000/(+spd/60)));
+
+    document.getElementById('demoLat').textContent = (33.971590 + progress*0.004).toFixed(6);
+    document.getElementById('demoLon').textContent = (-6.849813 + progress*0.008).toFixed(6);
+    document.getElementById('demoSpeed').textContent = spd + ' km/h';
+    document.getElementById('demoDist').textContent = dist + ' m';
+    document.getElementById('demoETA').textContent = eta + ' min';
+    document.getElementById('demoTime').textContent = new Date().toLocaleTimeString('ar');
+
+    // signal
+    const rssi = -75 - Math.round(progress*25) - Math.round(Math.random()*5);
+    const snr  = (12 - progress*5 + (Math.random()*2-1)).toFixed(1);
+    document.getElementById('sigRSSI').textContent = `RSSI: ${rssi} dBm | SNR: ${snr} dB`;
+    const bars = document.querySelectorAll('#sigBars .sig-bar');
+    const strength = Math.max(1, 5 - Math.round(progress*2));
+    bars.forEach((b,i) => {
+      b.style.background = i < strength
+        ? (i < 3 ? '#22c55e' : '#3b82f6')
+        : '#1e3a6e';
+    });
+  }, 2000);
+})();
+</script>
+</body>
+</html>
